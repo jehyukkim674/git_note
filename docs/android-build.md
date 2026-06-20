@@ -17,10 +17,24 @@ sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.
 
 ## 2. Rust 안드로이드 타깃 + cargo-ndk
 
+> ⚠️ **rustup 필요.** 현재 개발 머신의 Rust는 Homebrew로 설치돼 `rustup`이 없어 안드로이드
+> 타깃을 추가할 수 없다. 안드로이드 빌드 전에 rustup 기반 툴체인을 설치해야 한다:
+> ```bash
+> curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+> # (기존 Homebrew rust와 PATH 우선순위 정리 필요)
+> ```
+
 ```bash
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
 cargo install cargo-ndk
 ```
+
+### libgit2/OpenSSL 사전 설정 (이미 적용됨)
+
+`app/src-tauri/Cargo.toml`에 안드로이드 타깃 한정으로 `openssl-sys`를 vendored로 빌드하도록
+설정해 두었다. libgit2의 HTTPS TLS 백엔드를 정적 링크해 NDK 빌드에서 시스템 OpenSSL 의존을
+피한다. 그래도 link 단계에서 막히면 `git2`를 `default-features = false, features =
+["https", "vendored-libgit2", "vendored-openssl"]`로 좁혀 재시도한다.
 
 ## 3. Tauri 안드로이드 초기화 & 실행
 
