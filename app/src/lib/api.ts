@@ -15,6 +15,12 @@ export interface AppConfig {
   author_email: string;
 }
 
+export interface SearchHit {
+  path: string;
+  line: number;
+  snippet: string;
+}
+
 /// Rust Tauri command 래퍼.
 export const api = {
   ensureVault: () => invoke<AppConfig>("ensure_vault"),
@@ -24,4 +30,5 @@ export const api = {
   writeNote: (rel: string, content: string) =>
     invoke<void>("write_note", { rel, content }),
   deleteNote: (rel: string) => invoke<void>("delete_note", { rel }),
+  searchNotes: (query: string) => invoke<SearchHit[]>("search_notes", { query }),
 };

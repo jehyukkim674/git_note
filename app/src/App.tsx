@@ -1,22 +1,13 @@
 import { useEffect } from "react";
 import { useStore } from "./store";
-import { TreeView } from "./components/TreeView";
+import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
 import { Preview } from "./components/Preview";
 import "./App.css";
 
 function App() {
-  const {
-    tree,
-    selectedPath,
-    content,
-    dirty,
-    error,
-    init,
-    selectNote,
-    setContent,
-    save,
-  } = useStore();
+  const { selectedPath, content, dirty, error, init, setContent, save } =
+    useStore();
 
   useEffect(() => {
     init();
@@ -36,14 +27,7 @@ function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="sidebar-header">git_note</div>
-        <TreeView
-          nodes={tree}
-          selectedPath={selectedPath}
-          onSelect={selectNote}
-        />
-      </aside>
+      <Sidebar />
 
       <section className="editor-pane">
         <div className="pane-header">

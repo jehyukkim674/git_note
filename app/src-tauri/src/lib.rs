@@ -33,6 +33,7 @@ pub fn run() {
             commands::read_note,
             commands::write_note,
             commands::delete_note,
+            commands::search_notes,
             commands::clone_repo,
             commands::changed_paths
         ])

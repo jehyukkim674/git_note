@@ -72,6 +72,13 @@ pub fn delete_note(state: State<AppState>, rel: String) -> Result<(), String> {
     vault::delete_note(&root, &rel).map_err(|e| e.to_string())
 }
 
+/// 제목/본문 전체 검색.
+#[tauri::command]
+pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {
+    let root = vault_root(&state)?;
+    vault::search(&root, &query).map_err(|e| e.to_string())
+}
+
 /// 저장소를 clone 한다. 성공 시 clone된 경로를 문자열로 돌려준다.
 #[tauri::command]
 pub fn clone_repo(url: String, into: String, token: Option<String>) -> Result<String, String> {

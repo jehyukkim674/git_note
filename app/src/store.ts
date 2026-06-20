@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api, type TreeNode } from "./lib/api";
+import { api, type SearchHit, type TreeNode } from "./lib/api";
 
 interface AppStore {
   tree: TreeNode[];
@@ -8,12 +8,15 @@ interface AppStore {
   dirty: boolean;
   loading: boolean;
   error: string | null;
+  searchQuery: string;
+  searchResults: SearchHit[];
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
   selectNote: (path: string) => Promise<void>;
   setContent: (content: string) => void;
   save: () => Promise<void>;
+  setSearchQuery: (query: string) => Promise<void>;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -23,6 +26,8 @@ export const useStore = create<AppStore>((set, get) => ({
   dirty: false,
   loading: false,
   error: null,
+  searchQuery: "",
+  searchResults: [],
 
   init: async () => {
     set({ loading: true, error: null });
@@ -59,6 +64,20 @@ export const useStore = create<AppStore>((set, get) => ({
       await api.writeNote(selectedPath, content);
       set({ dirty: false, error: null });
       await get().loadTree();
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  setSearchQuery: async (query: string) => {
+    set({ searchQuery: query });
+    if (query.trim() === "") {
+      set({ searchResults: [] });
+      return;
+    }
+    try {
+      const searchResults = await api.searchNotes(query);
+      set({ searchResults, error: null });
     } catch (e) {
       set({ error: String(e) });
     }

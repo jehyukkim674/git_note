@@ -43,6 +43,58 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.search-box {
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+}
+
+.search-empty {
+  padding: 8px 12px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.search-hit:hover {
+  background: var(--accent-soft);
+}
+
+.hit-path {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hit-snippet {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tree-list {
   list-style: none;
   margin: 0;
