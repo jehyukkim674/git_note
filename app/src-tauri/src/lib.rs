@@ -1,18 +1,38 @@
 mod git_core;
+mod vault;
+mod config;
 mod commands;
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use std::sync::Mutex;
+use tauri::Manager;
+use config::{AppConfig, AppState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let config_dir = app
+                .path()
+                .app_config_dir()
+                .expect("resolve app config dir");
+            let data_dir = app.path().app_data_dir().expect("resolve app data dir");
+            let config_path = config_dir.join("config.json");
+            let cfg = AppConfig::load(&config_path);
+            app.manage(AppState {
+                config_path,
+                default_vault: data_dir.join("vault"),
+                config: Mutex::new(cfg),
+            });
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
-            greet,
+            commands::get_config,
+            commands::ensure_vault,
+            commands::list_tree,
+            commands::read_note,
+            commands::write_note,
+            commands::delete_note,
             commands::clone_repo,
             commands::changed_paths
         ])
