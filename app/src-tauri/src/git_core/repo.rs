@@ -61,6 +61,72 @@ pub fn push(repo: &Repository, branch: &str, token: Option<String>) -> Result<()
     Ok(())
 }
 
+/// pull 결과 분류.
+#[derive(Debug, PartialEq, Eq)]
+pub enum MergeOutcome {
+    UpToDate,
+    FastForward,
+    Merged,
+    Conflicts,
+}
+
+/// origin/branch를 fetch한 뒤 현재 브랜치에 병합한다.
+pub fn pull(
+    repo: &Repository,
+    branch: &str,
+    name: &str,
+    email: &str,
+    token: Option<String>,
+) -> Result<MergeOutcome, GitError> {
+    {
+        let mut remote = repo.find_remote("origin")?;
+        let mut fo = FetchOptions::new();
+        fo.remote_callbacks(make_callbacks(token));
+        remote.fetch(&[branch], Some(&mut fo), None)?;
+    }
+
+    let fetch_head = repo.find_reference("FETCH_HEAD")?;
+    let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
+    let (analysis, _) = repo.merge_analysis(&[&fetch_commit])?;
+
+    if analysis.is_up_to_date() {
+        return Ok(MergeOutcome::UpToDate);
+    }
+
+    let refname = format!("refs/heads/{branch}");
+
+    if analysis.is_fast_forward() {
+        let mut reference = repo.find_reference(&refname)?;
+        reference.set_target(fetch_commit.id(), "fast-forward")?;
+        repo.set_head(&refname)?;
+        repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
+        return Ok(MergeOutcome::FastForward);
+    }
+
+    // 일반 병합
+    repo.merge(&[&fetch_commit], None, None)?;
+    let mut index = repo.index()?;
+    if index.has_conflicts() {
+        return Ok(MergeOutcome::Conflicts);
+    }
+
+    // 병합 커밋 생성
+    let tree = repo.find_tree(index.write_tree()?)?;
+    let sig = Signature::now(name, email)?;
+    let local_commit = repo.head()?.peel_to_commit()?;
+    let remote_commit = repo.find_commit(fetch_commit.id())?;
+    repo.commit(
+        Some("HEAD"),
+        &sig,
+        &sig,
+        "merge",
+        &tree,
+        &[&local_commit, &remote_commit],
+    )?;
+    repo.cleanup_state()?;
+    Ok(MergeOutcome::Merged)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,5 +198,37 @@ mod tests {
         let b = dir.path().join("b");
         clone_repo(&url, &b, None).unwrap();
         assert!(b.join("pushed.md").exists());
+    }
+
+    #[test]
+    fn pull_fast_forwards_remote_change() {
+        let (dir, url) = make_seed_remote();
+
+        // B는 A의 push보다 먼저 clone해야 fast-forward가 발생한다.
+        let b = dir.path().join("b");
+        let repo_b = clone_repo(&url, &b, None).unwrap();
+        let branch = repo_b.head().unwrap().shorthand().unwrap().to_string();
+
+        // A가 커밋+push
+        let a = dir.path().join("a");
+        let repo_a = clone_repo(&url, &a, None).unwrap();
+        fs::write(a.join("from_a.md"), "# a").unwrap();
+        stage_all_and_commit(&repo_a, "a change", "A", "a@test").unwrap();
+        push(&repo_a, &branch, None).unwrap();
+
+        // B는 변경 없이 pull → fast-forward
+        let outcome = pull(&repo_b, &branch, "B", "b@test", None).unwrap();
+        assert_eq!(outcome, MergeOutcome::FastForward);
+        assert!(b.join("from_a.md").exists());
+    }
+
+    #[test]
+    fn pull_up_to_date_when_no_remote_change() {
+        let (dir, url) = make_seed_remote();
+        let b = dir.path().join("b");
+        let repo_b = clone_repo(&url, &b, None).unwrap();
+        let branch = repo_b.head().unwrap().shorthand().unwrap().to_string();
+        let outcome = pull(&repo_b, &branch, "B", "b@test", None).unwrap();
+        assert_eq!(outcome, MergeOutcome::UpToDate);
     }
 }
