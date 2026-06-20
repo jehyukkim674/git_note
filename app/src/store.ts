@@ -6,6 +6,7 @@ import {
   type SyncResult,
   type TreeNode,
 } from "./lib/api";
+import { flattenFiles } from "./lib/tree";
 
 export type SyncStatus =
   | "idle"
@@ -49,6 +50,7 @@ interface AppStore {
   conflicts: string[];
   theme: "light" | "dark";
   recent: string[];
+  sortBy: "name" | "modified";
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
@@ -65,10 +67,12 @@ interface AppStore {
   syncNow: () => Promise<void>;
   pushChanges: (message: string) => Promise<void>;
   createNote: (path: string) => Promise<void>;
+  createFolder: (path: string) => Promise<void>;
   renameNote: (from: string, to: string) => Promise<void>;
   deleteNote: (path: string) => Promise<void>;
   clearError: () => void;
   toggleTheme: () => void;
+  setSortBy: (sortBy: "name" | "modified") => void;
 }
 
 function initialTheme(): "light" | "dark" {
@@ -87,15 +91,6 @@ function initialTheme(): "light" | "dark" {
 /// .md 확장자를 보장한다.
 function ensureMd(path: string): string {
   return path.endsWith(".md") ? path : `${path}.md`;
-}
-
-function flattenFiles(nodes: TreeNode[]): string[] {
-  const out: string[] = [];
-  for (const n of nodes) {
-    if (n.is_dir) out.push(...flattenFiles(n.children));
-    else out.push(n.path);
-  }
-  return out;
 }
 
 function loadRecent(): string[] {
@@ -123,6 +118,7 @@ export const useStore = create<AppStore>((set, get) => ({
   conflicts: [],
   theme: initialTheme(),
   recent: loadRecent(),
+  sortBy: "name",
 
   init: async () => {
     set({ loading: true, error: null });
@@ -250,6 +246,18 @@ export const useStore = create<AppStore>((set, get) => ({
       set({ error: String(e) });
     }
   },
+
+  createFolder: async (path: string) => {
+    try {
+      await api.createFolder(path);
+      await get().loadTree();
+      await get().pushChanges(`create folder ${path}`);
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  setSortBy: (sortBy) => set({ sortBy }),
 
   clearError: () => set({ error: null }),
 

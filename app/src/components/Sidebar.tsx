@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
 import { TreeView } from "./TreeView";
 import { Dialog } from "./Dialog";
+import type { TreeNode } from "../lib/api";
 
 const SYNC_LABEL: Record<string, string> = {
   idle: "대기",
@@ -14,12 +15,28 @@ const SYNC_LABEL: Record<string, string> = {
 };
 
 type DialogState =
-  | { kind: "new" }
   | { kind: "rename"; path: string }
   | { kind: "delete"; path: string }
   | null;
 
-export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
+function sortTree(nodes: TreeNode[], sortBy: "name" | "modified"): TreeNode[] {
+  const sorted = [...nodes].sort((a, b) => {
+    if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+    if (!a.is_dir && sortBy === "modified") return b.modified - a.modified;
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  });
+  return sorted.map((n) =>
+    n.is_dir ? { ...n, children: sortTree(n.children, sortBy) } : n
+  );
+}
+
+interface Props {
+  onOpenSettings: () => void;
+  onNewNote: () => void;
+  onNewFolder: () => void;
+}
+
+export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
   const {
     tree,
     selectedPath,
@@ -31,10 +48,11 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
     syncStatus,
     theme,
     toggleTheme,
-    createNote,
     renameNote,
     deleteNote,
     recent,
+    sortBy,
+    setSortBy,
   } = useStore();
   const [local, setLocal] = useState("");
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -45,14 +63,25 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   }, [local, setSearchQuery]);
 
   const searching = searchQuery.trim() !== "";
+  const sortedTree = useMemo(() => sortTree(tree, sortBy), [tree, sortBy]);
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <span>git_note</span>
         <span className="header-actions">
-          <button className="icon-btn" title="새 노트" onClick={() => setDialog({ kind: "new" })}>
+          <button className="icon-btn" title="새 노트 (⌘N)" onClick={onNewNote}>
             ＋
+          </button>
+          <button className="icon-btn" title="새 폴더" onClick={onNewFolder}>
+            🗀
+          </button>
+          <button
+            className="icon-btn"
+            title={`정렬: ${sortBy === "name" ? "이름" : "수정시각"}`}
+            onClick={() => setSortBy(sortBy === "name" ? "modified" : "name")}
+          >
+            {sortBy === "name" ? "A↓" : "🕘"}
           </button>
           <button className="icon-btn" title="테마" onClick={toggleTheme}>
             {theme === "dark" ? "☀" : "☾"}
@@ -104,7 +133,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
             </div>
           )}
           <TreeView
-            nodes={tree}
+            nodes={sortedTree}
             selectedPath={selectedPath}
             onSelect={selectNote}
             onRename={(path) => setDialog({ kind: "rename", path })}
@@ -119,19 +148,6 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
         <span className="footer-gear">⚙</span>
       </button>
 
-      {dialog?.kind === "new" && (
-        <Dialog
-          title="새 노트"
-          mode="input"
-          message="경로를 입력하세요 (예: 폴더/메모). .md는 자동으로 붙습니다."
-          confirmLabel="생성"
-          onSubmit={(v) => {
-            if (v.trim()) createNote(v.trim());
-            setDialog(null);
-          }}
-          onCancel={() => setDialog(null)}
-        />
-      )}
       {dialog?.kind === "rename" && (
         <Dialog
           title="이름변경"

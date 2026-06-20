@@ -117,6 +117,17 @@ pub fn delete_note(root: &Path, rel: &str) -> Result<(), GitError> {
     Ok(())
 }
 
+/// 폴더를 생성한다(상위 포함). git은 빈 폴더를 추적하지 않으므로 `.gitkeep`을 둔다.
+pub fn create_folder(root: &Path, rel: &str) -> Result<(), GitError> {
+    let full = safe_join(root, rel)?;
+    fs::create_dir_all(&full)?;
+    let keep = full.join(".gitkeep");
+    if !keep.exists() {
+        fs::write(keep, b"")?;
+    }
+    Ok(())
+}
+
 /// 렌더된 HTML 본문을 같은 위치의 `.html` 파일로 내보낸다. 내보낸 상대경로를 돌려준다.
 pub fn export_html(root: &Path, rel: &str, body_html: &str) -> Result<String, GitError> {
     let src = safe_join(root, rel)?;
@@ -370,6 +381,23 @@ mod tests {
         write_note(dir.path(), "a.md", "x").unwrap();
         let tree = list_tree(dir.path()).unwrap();
         assert!(tree[0].modified > 0);
+    }
+
+    #[test]
+    fn create_folder_makes_dir_with_gitkeep() {
+        let dir = temp_root();
+        create_folder(dir.path(), "ideas/2026").unwrap();
+        assert!(dir.path().join("ideas/2026").is_dir());
+        assert!(dir.path().join("ideas/2026/.gitkeep").exists());
+        let tree = list_tree(dir.path()).unwrap();
+        assert_eq!(tree[0].name, "ideas");
+        assert!(tree[0].is_dir);
+    }
+
+    #[test]
+    fn create_folder_rejects_traversal() {
+        let dir = temp_root();
+        assert!(create_folder(dir.path(), "../evil").is_err());
     }
 
     #[test]
