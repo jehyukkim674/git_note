@@ -11,6 +11,11 @@ export function ownerRepoFromUrl(url: string | null | undefined): string | null 
   return m ? `${m[1]}/${m[2]}` : null;
 }
 
+/// git 병합 충돌 마커(<<<<<<< / ======= / >>>>>>>)가 본문에 남아있는지 검사한다.
+export function hasConflictMarkers(content: string): boolean {
+  return /^(<{7}|={7}|>{7})/m.test(content);
+}
+
 /// 헤딩 텍스트를 앵커 슬러그로 변환한다.
 export function slugify(text: string): string {
   return text

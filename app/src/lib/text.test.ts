@@ -4,6 +4,7 @@ import {
   ownerRepoFromUrl,
   slugify,
   extractHeadings,
+  hasConflictMarkers,
 } from "./text";
 
 describe("stripFrontmatter", () => {
@@ -41,6 +42,16 @@ describe("slugify", () => {
   });
   it("한글을 보존한다", () => {
     expect(slugify("회의 노트")).toBe("회의-노트");
+  });
+});
+
+describe("hasConflictMarkers", () => {
+  it("충돌 마커를 감지한다", () => {
+    const c = "a\n<<<<<<< HEAD\nmine\n=======\ntheirs\n>>>>>>> branch\nb";
+    expect(hasConflictMarkers(c)).toBe(true);
+  });
+  it("일반 본문은 false", () => {
+    expect(hasConflictMarkers("# 제목\n내용 ======= 아님")).toBe(false);
   });
 });
 

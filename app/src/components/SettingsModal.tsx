@@ -81,6 +81,15 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     []
   );
 
+  // Escape로 닫기
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const saveClientId = async () => {
     if (!clientId.trim()) return;
     try {
@@ -143,7 +152,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal modal-wide"
+        role="dialog"
+        aria-modal="true"
+        aria-label="설정"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2>설정</h2>
 
         <section className="settings-section">
