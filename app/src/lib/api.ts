@@ -43,6 +43,14 @@ export interface PollStatus {
   detail?: string;
 }
 
+export type SyncResult =
+  | { kind: "NoRepo" }
+  | { kind: "UpToDate" }
+  | { kind: "Pulled" }
+  | { kind: "Pushed" }
+  | { kind: "Offline" }
+  | { kind: "Conflicts"; detail: string[] };
+
 /// Rust Tauri command 래퍼.
 export const api = {
   ensureVault: () => invoke<AppConfig>("ensure_vault"),
@@ -64,4 +72,11 @@ export const api = {
     invoke<PollStatus>("github_poll", { deviceCode }),
   githubLoggedIn: () => invoke<boolean>("github_logged_in"),
   githubLogout: () => invoke<void>("github_logout"),
+
+  setAuthor: (name: string, email: string) =>
+    invoke<void>("set_author", { name, email }),
+  connectRepo: (repoUrl: string, branch: string) =>
+    invoke<AppConfig>("connect_repo", { repoUrl, branch }),
+  syncPull: () => invoke<SyncResult>("sync_pull"),
+  syncPush: (message: string) => invoke<SyncResult>("sync_push", { message }),
 };

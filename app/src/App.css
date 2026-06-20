@@ -327,3 +327,29 @@ body {
   font-size: 13px;
   color: var(--text-dim);
 }
+
+.modal-wide {
+  width: 480px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.settings-section {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.settings-section h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-gear {
+  margin-left: auto;
+}

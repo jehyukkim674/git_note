@@ -4,7 +4,45 @@ use tauri::State;
 use crate::auth;
 use crate::config::{AppConfig, AppState};
 use crate::git_core::repo;
+use crate::sync;
 use crate::vault;
+
+struct SyncCtx {
+    root: PathBuf,
+    branch: String,
+    name: String,
+    email: String,
+    token: Option<String>,
+}
+
+fn sync_ctx(state: &AppState) -> Result<SyncCtx, String> {
+    let cfg = state.config.lock().unwrap();
+    let root = cfg
+        .vault_path
+        .clone()
+        .ok_or_else(|| "no vault configured".to_string())?;
+    Ok(SyncCtx {
+        root: PathBuf::from(root),
+        branch: cfg.branch.clone(),
+        name: cfg.author_name.clone(),
+        email: cfg.author_email.clone(),
+        token: auth::get_token(),
+    })
+}
+
+/// 보관함이 비어있거나 welcome.md만 있으면 true.
+fn effectively_empty(root: &PathBuf) -> bool {
+    match fs::read_dir(root) {
+        Err(_) => true,
+        Ok(rd) => {
+            let names: Vec<String> = rd
+                .filter_map(|e| e.ok())
+                .map(|e| e.file_name().to_string_lossy().to_string())
+                .collect();
+            names.is_empty() || names.iter().all(|n| n == "welcome.md")
+        }
+    }
+}
 
 /// 설정 또는 환경변수에서 GitHub client_id를 얻는다.
 fn client_id(state: &AppState) -> Result<String, String> {
@@ -143,6 +181,64 @@ pub fn github_logged_in() -> bool {
 #[tauri::command]
 pub fn github_logout() -> Result<(), String> {
     auth::delete_token()
+}
+
+/// 커밋 작성자 정보를 저장한다.
+#[tauri::command]
+pub fn set_author(state: State<AppState>, name: String, email: String) -> Result<(), String> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.author_name = name;
+    cfg.author_email = email;
+    cfg.save(&state.config_path).map_err(|e| e.to_string())
+}
+
+/// GitHub 저장소를 보관함에 연결한다(필요 시 clone). 블로킹 → 별도 스레드.
+#[tauri::command(async)]
+pub fn connect_repo(
+    state: State<AppState>,
+    repo_url: String,
+    branch: String,
+) -> Result<AppConfig, String> {
+    let token = auth::get_token();
+    let root_path = {
+        let cfg = state.config.lock().unwrap();
+        let root = cfg
+            .vault_path
+            .clone()
+            .unwrap_or_else(|| state.default_vault.to_string_lossy().to_string());
+        PathBuf::from(root)
+    };
+
+    if !root_path.join(".git").exists() {
+        if !effectively_empty(&root_path) {
+            return Err(
+                "보관함이 비어있지 않습니다. 기존 노트를 옮기거나 빈 폴더에 연결하세요.".to_string(),
+            );
+        }
+        let _ = fs::remove_dir_all(&root_path);
+        repo::clone_repo(&repo_url, &root_path, token).map_err(|e| e.to_string())?;
+    }
+
+    let mut cfg = state.config.lock().unwrap();
+    cfg.vault_path = Some(root_path.to_string_lossy().to_string());
+    cfg.repo_url = Some(repo_url);
+    cfg.branch = branch;
+    cfg.save(&state.config_path).map_err(|e| e.to_string())?;
+    Ok(cfg.clone())
+}
+
+/// 원격에서 pull. 블로킹 → 별도 스레드.
+#[tauri::command(async)]
+pub fn sync_pull(state: State<AppState>) -> Result<sync::SyncResult, String> {
+    let c = sync_ctx(&state)?;
+    sync::pull_repo(&c.root, &c.branch, &c.name, &c.email, c.token)
+}
+
+/// 변경을 커밋하고 push. 블로킹 → 별도 스레드.
+#[tauri::command(async)]
+pub fn sync_push(state: State<AppState>, message: String) -> Result<sync::SyncResult, String> {
+    let c = sync_ctx(&state)?;
+    sync::commit_and_push(&c.root, &c.branch, &c.name, &c.email, c.token, &message)
 }
 
 /// 이미지/첨부를 assets/에 저장하고 상대경로를 돌려준다.

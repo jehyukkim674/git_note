@@ -4,7 +4,7 @@ import { api } from "./lib/api";
 import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
 import { Preview } from "./components/Preview";
-import { LoginModal } from "./components/LoginModal";
+import { SettingsModal } from "./components/SettingsModal";
 import "./App.css";
 
 async function saveImage(file: File): Promise<string> {
@@ -15,7 +15,7 @@ async function saveImage(file: File): Promise<string> {
 function App() {
   const { selectedPath, content, dirty, error, vaultPath, init, setContent, save } =
     useStore();
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     init();
@@ -35,7 +35,7 @@ function App() {
 
   return (
     <div className="app">
-      <Sidebar onOpenLogin={() => setLoginOpen(true)} />
+      <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
 
       <section className="editor-pane">
         <div className="pane-header">
@@ -59,7 +59,7 @@ function App() {
       </section>
 
       {error && <div className="error-toast">{error}</div>}
-      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

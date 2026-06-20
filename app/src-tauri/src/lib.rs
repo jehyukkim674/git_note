@@ -1,6 +1,7 @@
 mod git_core;
 mod vault;
 mod auth;
+mod sync;
 mod config;
 mod commands;
 
@@ -41,6 +42,10 @@ pub fn run() {
             commands::github_poll,
             commands::github_logged_in,
             commands::github_logout,
+            commands::set_author,
+            commands::connect_repo,
+            commands::sync_pull,
+            commands::sync_push,
             commands::clone_repo,
             commands::changed_paths
         ])

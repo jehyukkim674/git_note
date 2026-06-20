@@ -2,7 +2,17 @@ import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { TreeView } from "./TreeView";
 
-export function Sidebar({ onOpenLogin }: { onOpenLogin: () => void }) {
+const SYNC_LABEL: Record<string, string> = {
+  idle: "대기",
+  syncing: "동기화 중…",
+  synced: "동기화됨",
+  offline: "오프라인",
+  conflict: "충돌",
+  norepo: "저장소 미연결",
+  error: "오류",
+};
+
+export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const {
     tree,
     selectedPath,
@@ -11,6 +21,7 @@ export function Sidebar({ onOpenLogin }: { onOpenLogin: () => void }) {
     searchResults,
     setSearchQuery,
     loggedIn,
+    syncStatus,
   } = useStore();
   const [local, setLocal] = useState("");
 
@@ -58,9 +69,10 @@ export function Sidebar({ onOpenLogin }: { onOpenLogin: () => void }) {
         />
       )}
 
-      <button className="sidebar-footer" onClick={onOpenLogin}>
+      <button className="sidebar-footer" onClick={onOpenSettings}>
         <span className={loggedIn ? "dot dot-on" : "dot dot-off"} />
-        {loggedIn ? "GitHub 연결됨" : "GitHub 로그인"}
+        <span>{SYNC_LABEL[syncStatus] ?? syncStatus}</span>
+        <span className="footer-gear">⚙</span>
       </button>
     </aside>
   );
