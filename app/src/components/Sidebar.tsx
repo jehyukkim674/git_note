@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
 import { TreeView } from "./TreeView";
 import { Dialog } from "./Dialog";
+import { splitHighlight } from "../lib/text";
 import type { TreeNode } from "../lib/api";
 
 const SYNC_LABEL: Record<string, string> = {
@@ -127,7 +128,16 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
               <button className="search-hit" onClick={() => selectNote(hit.path)}>
                 <span className="hit-path">{hit.path}</span>
                 <span className="hit-snippet">
-                  {hit.line > 0 ? `${hit.line}: ${hit.snippet}` : "제목 일치"}
+                  {hit.line > 0 ? (
+                    <>
+                      {hit.line}:{" "}
+                      {splitHighlight(hit.snippet, searchQuery).map((s, j) =>
+                        s.hit ? <mark key={j}>{s.text}</mark> : <span key={j}>{s.text}</span>
+                      )}
+                    </>
+                  ) : (
+                    "제목 일치"
+                  )}
                 </span>
               </button>
             </li>

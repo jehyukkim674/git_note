@@ -11,6 +11,32 @@ export function ownerRepoFromUrl(url: string | null | undefined): string | null 
   return m ? `${m[1]}/${m[2]}` : null;
 }
 
+export interface Segment {
+  text: string;
+  hit: boolean;
+}
+
+/// text를 query(대소문자 무시) 매칭 구간 기준으로 분할한다(하이라이트용).
+export function splitHighlight(text: string, query: string): Segment[] {
+  const q = query.trim();
+  if (!q) return [{ text, hit: false }];
+  const lower = text.toLowerCase();
+  const ql = q.toLowerCase();
+  const segs: Segment[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const idx = lower.indexOf(ql, i);
+    if (idx === -1) {
+      segs.push({ text: text.slice(i), hit: false });
+      break;
+    }
+    if (idx > i) segs.push({ text: text.slice(i, idx), hit: false });
+    segs.push({ text: text.slice(idx, idx + q.length), hit: true });
+    i = idx + q.length;
+  }
+  return segs;
+}
+
 /// 본문에서 #태그를 추출한다(헤딩 `# ` 제외, 중복 제거, 순서 유지).
 export function extractTags(content: string): string[] {
   const body = stripFrontmatter(content);

@@ -191,6 +191,27 @@ body {
   text-overflow: ellipsis;
 }
 
+.hit-snippet mark {
+  background: #fde68a;
+  color: inherit;
+  border-radius: 2px;
+}
+
+.crash {
+  padding: 40px;
+  text-align: center;
+  color: var(--text);
+}
+
+.crash pre {
+  text-align: left;
+  background: var(--bg-alt);
+  padding: 12px;
+  border-radius: 6px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .tree-list {
   list-style: none;
   margin: 0;

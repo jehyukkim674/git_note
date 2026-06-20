@@ -6,6 +6,7 @@ import {
   extractHeadings,
   hasConflictMarkers,
   extractTags,
+  splitHighlight,
 } from "./text";
 
 describe("stripFrontmatter", () => {
@@ -56,6 +57,25 @@ describe("extractTags", () => {
   });
   it("순수 숫자(#1 등)는 태그로 보지 않는다", () => {
     expect(extractTags("이슈 #1 와 #2026 그리고 #v2")).toEqual(["v2"]);
+  });
+});
+
+describe("splitHighlight", () => {
+  it("매칭 구간을 hit로 분할한다", () => {
+    expect(splitHighlight("Hello World", "world")).toEqual([
+      { text: "Hello ", hit: false },
+      { text: "World", hit: true },
+    ]);
+  });
+  it("빈 쿼리는 전체를 non-hit", () => {
+    expect(splitHighlight("abc", "")).toEqual([{ text: "abc", hit: false }]);
+  });
+  it("여러 매칭을 모두 분할한다", () => {
+    expect(splitHighlight("a x a", "a")).toEqual([
+      { text: "a", hit: true },
+      { text: " x ", hit: false },
+      { text: "a", hit: true },
+    ]);
   });
 });
 
