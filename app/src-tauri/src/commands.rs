@@ -241,6 +241,13 @@ pub fn sync_push(state: State<AppState>, message: String) -> Result<sync::SyncRe
     sync::commit_and_push(&c.root, &c.branch, &c.name, &c.email, c.token, &message)
 }
 
+/// GitHub 최신 릴리스로 업데이트 가능 여부를 확인한다(안드로이드/공통).
+#[tauri::command]
+pub async fn check_update_github(owner_repo: String) -> Result<crate::update::UpdateCheck, String> {
+    let current = env!("CARGO_PKG_VERSION").to_string();
+    crate::update::check_github_release(&owner_repo, &current).await
+}
+
 /// 이미지/첨부를 assets/에 저장하고 상대경로를 돌려준다.
 #[tauri::command]
 pub fn save_asset(

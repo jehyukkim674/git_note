@@ -51,6 +51,21 @@ export type SyncResult =
   | { kind: "Offline" }
   | { kind: "Conflicts"; detail: string[] };
 
+export interface UpdateCheck {
+  current: string;
+  latest_tag: string;
+  newer: boolean;
+  html_url: string;
+  apk_url: string | null;
+}
+
+/// GitHub 저장소 URL에서 "owner/repo"를 추출(없으면 null).
+export function ownerRepoFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = url.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/i);
+  return m ? `${m[1]}/${m[2]}` : null;
+}
+
 /// Rust Tauri command 래퍼.
 export const api = {
   ensureVault: () => invoke<AppConfig>("ensure_vault"),
@@ -79,4 +94,6 @@ export const api = {
     invoke<AppConfig>("connect_repo", { repoUrl, branch }),
   syncPull: () => invoke<SyncResult>("sync_pull"),
   syncPush: (message: string) => invoke<SyncResult>("sync_push", { message }),
+  checkUpdateGithub: (ownerRepo: string) =>
+    invoke<UpdateCheck>("check_update_github", { ownerRepo }),
 };

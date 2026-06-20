@@ -2,6 +2,7 @@ mod git_core;
 mod vault;
 mod auth;
 mod sync;
+mod update;
 mod config;
 mod commands;
 
@@ -11,8 +12,15 @@ use config::{AppConfig, AppState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder
         .setup(|app| {
             let config_dir = app
                 .path()
@@ -46,6 +54,7 @@ pub fn run() {
             commands::connect_repo,
             commands::sync_pull,
             commands::sync_push,
+            commands::check_update_github,
             commands::clone_repo,
             commands::changed_paths
         ])

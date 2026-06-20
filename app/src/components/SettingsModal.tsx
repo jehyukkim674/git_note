@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { api, type DeviceCodeResponse } from "../lib/api";
+import {
+  api,
+  ownerRepoFromUrl,
+  type DeviceCodeResponse,
+  type UpdateCheck,
+} from "../lib/api";
 import { useStore } from "../store";
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
@@ -25,6 +30,47 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [branch, setBranch] = useState(config?.branch ?? "main");
   const [authorName, setAuthorName] = useState(config?.author_name ?? "");
   const [authorEmail, setAuthorEmail] = useState(config?.author_email ?? "");
+
+  const [updateMsg, setUpdateMsg] = useState("");
+  const [updateInfo, setUpdateInfo] = useState<UpdateCheck | null>(null);
+
+  const checkUpdate = async () => {
+    setUpdateMsg("확인 중…");
+    setUpdateInfo(null);
+    const or = ownerRepoFromUrl(config?.repo_url);
+    if (!or) {
+      setUpdateMsg("GitHub 저장소가 설정되지 않아 업데이트를 확인할 수 없습니다.");
+      return;
+    }
+    try {
+      const res = await api.checkUpdateGithub(or);
+      setUpdateInfo(res);
+      setUpdateMsg(
+        res.newer
+          ? `새 버전 ${res.latest_tag} 사용 가능 (현재 ${res.current})`
+          : `최신 버전입니다 (현재 ${res.current})`
+      );
+    } catch (e) {
+      setUpdateMsg(String(e));
+    }
+  };
+
+  const installDesktop = async () => {
+    setUpdateMsg("다운로드 중…");
+    try {
+      const { check } = await import("@tauri-apps/plugin-updater");
+      const { relaunch } = await import("@tauri-apps/plugin-process");
+      const update = await check();
+      if (update) {
+        await update.downloadAndInstall();
+        await relaunch();
+      } else {
+        setUpdateMsg("설치할 업데이트가 없습니다.");
+      }
+    } catch (e) {
+      setUpdateMsg(`자동 설치 실패(서명키/엔드포인트 설정 필요): ${e}`);
+    }
+  };
 
   useEffect(
     () => () => {
@@ -174,6 +220,30 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <span className="dim">상태: {syncStatus}</span>
             <button onClick={() => syncNow()}>지금 동기화</button>
           </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>업데이트</h3>
+          <div className="row-between">
+            <span className="dim">{updateMsg || "최신 릴리스 확인"}</span>
+            <button onClick={checkUpdate}>업데이트 확인</button>
+          </div>
+          {updateInfo?.newer && (
+            <div className="update-actions">
+              <button onClick={installDesktop}>지금 설치 (데스크톱)</button>
+              <button className="link" onClick={() => openUrl(updateInfo.html_url)}>
+                릴리스 보기
+              </button>
+              {updateInfo.apk_url && (
+                <button
+                  className="link"
+                  onClick={() => openUrl(updateInfo.apk_url!)}
+                >
+                  APK 다운로드
+                </button>
+              )}
+            </div>
+          )}
         </section>
 
         {message && <p className="modal-msg">{message}</p>}
