@@ -1,0 +1,57 @@
+import { describe, it, expect } from "vitest";
+import {
+  stripFrontmatter,
+  ownerRepoFromUrl,
+  slugify,
+  extractHeadings,
+} from "./text";
+
+describe("stripFrontmatter", () => {
+  it("선행 프론트매터를 제거한다", () => {
+    const input = "---\ntitle: x\ntags: [a]\n---\n# 본문\n내용";
+    expect(stripFrontmatter(input)).toBe("# 본문\n내용");
+  });
+  it("프론트매터가 없으면 그대로 둔다", () => {
+    expect(stripFrontmatter("# 본문")).toBe("# 본문");
+  });
+  it("본문 중간의 --- 는 건드리지 않는다", () => {
+    const input = "본문\n\n---\n구분선 뒤";
+    expect(stripFrontmatter(input)).toBe(input);
+  });
+});
+
+describe("ownerRepoFromUrl", () => {
+  it("https .git URL을 파싱한다", () => {
+    expect(ownerRepoFromUrl("https://github.com/octocat/Hello-World.git")).toBe(
+      "octocat/Hello-World"
+    );
+  });
+  it(".git 없는 URL도 파싱한다", () => {
+    expect(ownerRepoFromUrl("https://github.com/a/b")).toBe("a/b");
+  });
+  it("GitHub가 아니면 null", () => {
+    expect(ownerRepoFromUrl("https://example.com/a/b")).toBeNull();
+    expect(ownerRepoFromUrl(null)).toBeNull();
+  });
+});
+
+describe("slugify", () => {
+  it("공백을 하이픈으로, 특수문자 제거", () => {
+    expect(slugify("Hello, World!")).toBe("hello-world");
+  });
+  it("한글을 보존한다", () => {
+    expect(slugify("회의 노트")).toBe("회의-노트");
+  });
+});
+
+describe("extractHeadings", () => {
+  it("레벨과 슬러그를 추출한다", () => {
+    const md = "# 제목\n내용\n## 소제목\n```\n# 코드 안 헤딩\n```\n### 깊은";
+    const hs = extractHeadings(md);
+    expect(hs).toEqual([
+      { level: 1, text: "제목", slug: "제목" },
+      { level: 2, text: "소제목", slug: "소제목" },
+      { level: 3, text: "깊은", slug: "깊은" },
+    ]);
+  });
+});

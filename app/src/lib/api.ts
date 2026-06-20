@@ -60,12 +60,7 @@ export interface UpdateCheck {
   apk_url: string | null;
 }
 
-/// GitHub 저장소 URL에서 "owner/repo"를 추출(없으면 null).
-export function ownerRepoFromUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const m = url.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/i);
-  return m ? `${m[1]}/${m[2]}` : null;
-}
+export { ownerRepoFromUrl } from "./text";
 
 /// Rust Tauri command 래퍼.
 export const api = {

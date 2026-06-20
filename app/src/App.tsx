@@ -9,6 +9,7 @@ import { Preview } from "./components/Preview";
 import { SettingsModal } from "./components/SettingsModal";
 import { QuickOpen } from "./components/QuickOpen";
 import { Dialog } from "./components/Dialog";
+import { Outline } from "./components/Outline";
 import "./App.css";
 
 async function saveImage(file: File): Promise<string> {
@@ -46,6 +47,7 @@ function App() {
   const [exportMsg, setExportMsg] = useState("");
   const [appDialog, setAppDialog] = useState<"newNote" | "newFolder" | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [showOutline, setShowOutline] = useState(false);
   const isMobile = useMediaQuery("(max-width: 720px)");
 
   const wordInfo = useMemo(() => {
@@ -237,7 +239,17 @@ function App() {
           />
       {editorPane}
       <section className="preview-pane">
-        <div className="pane-header">미리보기</div>
+        <div className="pane-header">
+          <span>미리보기</span>
+          <button
+            className="save-btn"
+            onClick={() => setShowOutline((s) => !s)}
+            title="목차"
+          >
+            {showOutline ? "목차 닫기" : "목차"}
+          </button>
+        </div>
+        {showOutline && <Outline content={content} />}
         <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
       </section>
 

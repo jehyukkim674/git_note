@@ -2,6 +2,9 @@ import MarkdownIt from "markdown-it";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js/lib/common";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { slugify, stripFrontmatter } from "./text";
+
+export { stripFrontmatter } from "./text";
 
 const md = new MarkdownIt({
   html: false,
@@ -54,14 +57,19 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   return defaultLinkRender(tokens, idx, options, env, self);
 };
 
+// 헤딩에 슬러그 id를 부여(아웃라인 스크롤용).
+const defaultHeadingRender =
+  md.renderer.rules.heading_open ??
+  ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
+md.renderer.rules.heading_open = (tokens, idx, options, env, self) => {
+  const inline = tokens[idx + 1];
+  const text = inline && inline.type === "inline" ? inline.content : "";
+  tokens[idx].attrSet("id", slugify(text));
+  return defaultHeadingRender(tokens, idx, options, env, self);
+};
+
 const ALLOWED_URI_REGEXP =
   /^(?:(?:https?|asset|tauri|mailto|tel|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i;
-
-/// 선행 YAML 프론트매터(--- … ---)를 제거한다.
-export function stripFrontmatter(content: string): string {
-  const m = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
-  return m ? content.slice(m[0].length) : content;
-}
 
 /// [[대상]] 위키링크를 마크다운 링크로 치환한다.
 function preprocessWikiLinks(content: string): string {
