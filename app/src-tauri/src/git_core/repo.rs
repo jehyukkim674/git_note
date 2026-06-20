@@ -127,6 +127,33 @@ pub fn pull(
     Ok(MergeOutcome::Merged)
 }
 
+/// 작업트리에서 변경/신규/삭제된 파일 경로 목록.
+pub fn changed_paths(repo: &Repository) -> Result<Vec<String>, GitError> {
+    let statuses = repo.statuses(None)?;
+    let mut out = Vec::new();
+    for entry in statuses.iter() {
+        if let Some(path) = entry.path() {
+            out.push(path.to_string());
+        }
+    }
+    Ok(out)
+}
+
+/// 충돌 상태인 파일 경로 목록.
+pub fn conflicted_paths(repo: &Repository) -> Result<Vec<String>, GitError> {
+    let index = repo.index()?;
+    let mut out = Vec::new();
+    if index.has_conflicts() {
+        for conflict in index.conflicts()? {
+            let conflict = conflict?;
+            if let Some(entry) = conflict.our.or(conflict.their) {
+                out.push(String::from_utf8_lossy(&entry.path).to_string());
+            }
+        }
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -230,5 +257,23 @@ mod tests {
         let branch = repo_b.head().unwrap().shorthand().unwrap().to_string();
         let outcome = pull(&repo_b, &branch, "B", "b@test", None).unwrap();
         assert_eq!(outcome, MergeOutcome::UpToDate);
+    }
+
+    #[test]
+    fn changed_paths_lists_new_file() {
+        let (dir, url) = make_seed_remote();
+        let dest = dir.path().join("clone");
+        let repo = clone_repo(&url, &dest, None).unwrap();
+        fs::write(dest.join("new.md"), "x").unwrap();
+        let changed = changed_paths(&repo).unwrap();
+        assert!(changed.contains(&"new.md".to_string()));
+    }
+
+    #[test]
+    fn conflicted_paths_empty_when_clean() {
+        let (dir, url) = make_seed_remote();
+        let dest = dir.path().join("clone");
+        let repo = clone_repo(&url, &dest, None).unwrap();
+        assert!(conflicted_paths(&repo).unwrap().is_empty());
     }
 }
