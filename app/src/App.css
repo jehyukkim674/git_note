@@ -31,6 +31,29 @@ body {
   overflow: hidden;
 }
 
+.app-mobile {
+  grid-template-columns: 1fr;
+}
+
+.app-mobile .sidebar {
+  border-right: none;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 8px 0 0;
+}
+
+.header-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .sidebar {
   background: var(--bg-alt);
   border-right: 1px solid var(--border);

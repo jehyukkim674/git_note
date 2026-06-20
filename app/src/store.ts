@@ -52,6 +52,7 @@ interface AppStore {
   loadTree: () => Promise<void>;
   selectNote: (path: string) => Promise<void>;
   setContent: (content: string) => void;
+  clearSelection: () => void;
   save: () => Promise<void>;
   setSearchQuery: (query: string) => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -112,6 +113,8 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setContent: (content: string) => set({ content, dirty: true }),
+
+  clearSelection: () => set({ selectedPath: null, content: "", dirty: false }),
 
   save: async () => {
     const { selectedPath, content, config } = get();
