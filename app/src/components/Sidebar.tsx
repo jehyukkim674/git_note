@@ -5,6 +5,13 @@ import { Dialog } from "./Dialog";
 import { splitHighlight } from "../lib/text";
 import type { TreeNode } from "../lib/api";
 
+function countNotes(nodes: TreeNode[]): number {
+  return nodes.reduce(
+    (sum, n) => sum + (n.is_dir ? countNotes(n.children) : 1),
+    0
+  );
+}
+
 const SYNC_LABEL: Record<string, string> = {
   idle: "대기",
   syncing: "동기화 중…",
@@ -79,11 +86,15 @@ export function Sidebar({
 
   const searching = searchQuery.trim() !== "";
   const sortedTree = useMemo(() => sortTree(tree, sortBy), [tree, sortBy]);
+  const noteCount = useMemo(() => countNotes(tree), [tree]);
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span>git_note</span>
+        <span className="sidebar-title">
+          git_note
+          {noteCount > 0 && <span className="count-badge">{noteCount}</span>}
+        </span>
         <span className="header-actions">
           <button
             className="icon-btn"
@@ -119,12 +130,26 @@ export function Sidebar({
           </button>
         </span>
       </div>
-      <input
-        className="search-box"
-        placeholder="검색…"
-        value={local}
-        onChange={(e) => setLocal(e.target.value)}
-      />
+      <div className="search-box-wrap">
+        <span className="search-icon" aria-hidden="true">🔍</span>
+        <input
+          className="search-box"
+          placeholder="검색…"
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          aria-label="노트 검색"
+        />
+        {local && (
+          <button
+            className="search-clear"
+            title="검색어 지우기"
+            aria-label="검색어 지우기"
+            onClick={() => setLocal("")}
+          >
+            ✕
+          </button>
+        )}
+      </div>
       {searching ? (
         <ul className="search-results">
           {searchResults.length === 0 && (
@@ -227,8 +252,9 @@ export function Sidebar({
         <Dialog
           title="삭제"
           mode="confirm"
-          message={`'${dialog.path}'를 삭제할까요?`}
+          message={`'${dialog.path}'를 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
           confirmLabel="삭제"
+          danger
           onSubmit={() => {
             deleteNote(dialog.path);
             setDialog(null);

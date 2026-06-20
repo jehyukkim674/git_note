@@ -1,21 +1,46 @@
 :root {
   --bg: #ffffff;
   --bg-alt: #f6f7f9;
-  --border: #e2e5e9;
+  --bg-elevated: #ffffff;
+  --border: #e6e8ec;
+  --border-strong: #d2d6dc;
   --text: #1f2328;
   --text-dim: #6b7280;
   --accent: #2563eb;
-  --accent-soft: #dbeafe;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eaf1ff;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --success: #16a34a;
+
+  /* 1. 디자인 토큰: 간격 · 라운드 · 그림자 · 트랜지션 */
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --sh-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --sh-md: 0 6px 20px rgba(15, 23, 42, 0.12);
+  --sh-lg: 0 14px 48px rgba(15, 23, 42, 0.22);
+  --t-fast: 0.12s ease;
+  --t-med: 0.2s ease;
 }
 
 [data-theme="dark"] {
-  --bg: #1e1f22;
-  --bg-alt: #26282d;
-  --border: #3a3d44;
+  --bg: #1a1b1e;
+  --bg-alt: #232529;
+  --bg-elevated: #2a2c31;
+  --border: #34373d;
+  --border-strong: #43464d;
   --text: #e6e8eb;
   --text-dim: #9aa1ab;
   --accent: #3b82f6;
-  --accent-soft: #1e3a5f;
+  --accent-hover: #60a5fa;
+  --accent-soft: #1e324d;
+  --danger: #ef4444;
+  --danger-soft: #3a1c1c;
+  --success: #22c55e;
+  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --sh-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --sh-lg: 0 14px 48px rgba(0, 0, 0, 0.55);
 }
 
 [data-theme="dark"] body {
@@ -36,11 +61,46 @@ body,
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 3. 키보드 포커스 링(접근성) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+button {
+  font-family: inherit;
+}
+
+/* 2. 테마 대응 커스텀 스크롤바 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .app {
   display: grid;
-  grid-template-columns: 240px 1fr 1fr;
+  grid-template-columns: 250px 1fr 1fr;
   height: 100vh;
   overflow: hidden;
 }
@@ -60,6 +120,10 @@ body {
   cursor: pointer;
   font-size: 13px;
   padding: 0 8px 0 0;
+  transition: color var(--t-fast);
+}
+.back-btn:hover {
+  color: var(--accent-hover);
 }
 
 .header-right {
@@ -72,8 +136,11 @@ body {
   background: var(--bg-alt);
   border-right: 1px solid var(--border);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
+/* 12. 사이드바 헤더 · 검색창 sticky 고정 */
 .sidebar-header {
   font-weight: 700;
   padding: 10px 12px;
@@ -81,25 +148,51 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--bg-alt);
+  z-index: 5;
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* 17. 노트 수 배지 */
+.count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 7px;
+  line-height: 17px;
 }
 
 .header-actions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
 .icon-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 4px 7px;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast), transform var(--t-fast);
 }
 
 .icon-btn:hover {
   background: var(--accent-soft);
+}
+.icon-btn:active {
+  transform: scale(0.92);
 }
 
 .tree-empty {
@@ -119,7 +212,7 @@ body {
 
 .tree-actions {
   display: none;
-  gap: 2px;
+  gap: 1px;
   padding-right: 6px;
 }
 
@@ -132,22 +225,67 @@ body {
   border: none;
   cursor: pointer;
   font-size: 12px;
-  opacity: 0.6;
+  opacity: 0.55;
+  padding: 2px 4px;
+  border-radius: var(--r-sm);
+  transition: opacity var(--t-fast), background var(--t-fast);
 }
 
 .tree-action:hover {
   opacity: 1;
+  background: var(--accent-soft);
 }
 
+/* 16. 검색창 + 아이콘 + 지우기 */
+.search-box-wrap {
+  position: sticky;
+  top: 47px;
+  z-index: 4;
+  background: var(--bg-alt);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.search-box-wrap .search-icon {
+  position: absolute;
+  left: 18px;
+  font-size: 12px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
 .search-box {
-  width: calc(100% - 16px);
-  margin: 8px;
-  padding: 6px 8px;
+  flex: 1;
+  width: 100%;
+  margin: 0;
+  padding: 7px 26px 7px 26px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   font-size: 13px;
   background: var(--bg);
   color: var(--text);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.search-box:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search-clear {
+  position: absolute;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 50%;
+  line-height: 1;
+}
+.search-clear:hover {
+  color: var(--text);
+  background: var(--border);
 }
 
 .search-results {
@@ -171,7 +309,8 @@ body {
   border: none;
   padding: 6px 8px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast);
 }
 
 .search-hit:hover {
@@ -193,23 +332,44 @@ body {
 
 .hit-snippet mark {
   background: #fde68a;
-  color: inherit;
+  color: #1f2328;
   border-radius: 2px;
+  padding: 0 1px;
 }
 
+/* 28. 크래시 화면 */
 .crash {
-  padding: 40px;
+  padding: 48px 40px;
   text-align: center;
   color: var(--text);
+  max-width: 560px;
+  margin: 0 auto;
 }
-
+.crash h2 {
+  margin-bottom: 4px;
+}
 .crash pre {
   text-align: left;
   background: var(--bg-alt);
   padding: 12px;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   overflow: auto;
   white-space: pre-wrap;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+.crash button {
+  margin-top: 12px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+.crash button:hover {
+  background: var(--accent-hover);
 }
 
 .tree-list {
@@ -223,30 +383,40 @@ body {
   text-align: left;
   background: none;
   border: none;
-  padding: 4px 8px;
+  padding: 5px 8px;
   font-size: 13px;
   color: var(--text);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
+  border-left: 2px solid transparent;
+  transition: background var(--t-fast), color var(--t-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tree-row:hover {
   background: var(--accent-soft);
 }
 
+/* 5. 선택된 행: 부드러운 배경 + 액센트 좌측 바 */
 .tree-file.selected {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  border-left-color: var(--accent);
 }
 
 .tree-dir {
   font-weight: 600;
 }
 
+/* 18. 캐럿 회전 트랜지션 */
 .tree-caret {
   display: inline-block;
   width: 14px;
   color: var(--text-dim);
+  transition: transform var(--t-fast);
 }
 
 .editor-pane,
@@ -261,23 +431,47 @@ body {
   background: var(--bg);
 }
 
+/* 13. 페인 헤더 */
 .pane-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
   color: var(--text-dim);
+  min-height: 42px;
+  gap: 8px;
+}
+.pane-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pane-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .save-btn {
   font-size: 12px;
-  padding: 3px 10px;
+  padding: 4px 11px;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   background: var(--bg);
+  color: var(--text);
   cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+.save-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.save-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .save-btn:disabled {
@@ -285,9 +479,26 @@ body {
   cursor: default;
 }
 
+/* 20. 저장 상태 표시 */
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.save-state .save-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+.save-state.is-dirty .save-dot {
+  background: var(--accent);
+}
+
 .word-count {
   font-size: 11px;
   color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .recent {
@@ -299,7 +510,9 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-dim);
-  padding: 4px 12px;
+  padding: 6px 12px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .recent-item {
@@ -324,26 +537,41 @@ body {
   overflow: auto;
 }
 
+/* 19. 마크다운 툴바 */
 .md-toolbar {
   display: flex;
-  gap: 2px;
-  padding: 4px 8px;
+  gap: 1px;
+  padding: 5px 8px;
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
+  align-items: center;
+  background: var(--bg-alt);
 }
 
 .md-toolbar button {
   background: none;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   font-size: 12px;
   color: var(--text);
-  padding: 3px 7px;
+  padding: 4px 8px;
+  min-width: 28px;
+  transition: background var(--t-fast);
 }
 
 .md-toolbar button:hover {
   background: var(--accent-soft);
+}
+.md-toolbar button:active {
+  background: var(--border);
+}
+
+.toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 2px 4px;
 }
 
 .font-sm .cm-content,
@@ -369,22 +597,31 @@ body {
 .font-buttons button.active {
   background: var(--accent);
   color: #fff;
+  border-color: var(--accent);
 }
 
+/* 14. 빈 상태 */
 .empty {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   justify-content: center;
   color: var(--text-dim);
   text-align: center;
   padding: 0 24px;
 }
+.empty-icon {
+  font-size: 44px;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
 
 .onboarding {
   font-size: 13px;
+  max-width: 320px;
+  line-height: 1.6;
 }
 
 .shortcut-list {
@@ -398,13 +635,16 @@ body {
   margin: 4px 0;
 }
 
-.shortcut-list kbd {
+.shortcut-list kbd,
+kbd {
   background: var(--bg-alt);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
   padding: 1px 6px;
   font-size: 12px;
   margin-right: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .path-text {
@@ -429,8 +669,12 @@ body {
   cursor: pointer;
   font-size: 12px;
   color: var(--text);
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .outline-item:hover {
@@ -444,22 +688,133 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* 10. 프리뷰 타이포 */
 .preview {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px;
-  line-height: 1.6;
+  padding: 20px 24px;
+  line-height: 1.7;
+  word-wrap: break-word;
 }
 
 .preview h1,
 .preview h2 {
   border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
+  padding-bottom: 5px;
+  line-height: 1.3;
+}
+.preview h1 { font-size: 1.7em; margin-top: 0.6em; }
+.preview h2 { font-size: 1.4em; }
+.preview h3 { font-size: 1.2em; }
+
+.preview a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.preview a:hover {
+  text-decoration: underline;
+}
+
+/* 26. 헤딩 hover 앵커 */
+.preview h1, .preview h2, .preview h3 {
+  scroll-margin-top: 12px;
+}
+
+.preview blockquote {
+  margin: 12px 0;
+  padding: 4px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-alt);
+  color: var(--text-dim);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+
+.preview table {
+  border-collapse: collapse;
+  margin: 12px 0;
+  width: 100%;
+  font-size: 0.95em;
+}
+.preview th,
+.preview td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+.preview th {
+  background: var(--bg-alt);
+  font-weight: 600;
+}
+.preview tr:nth-child(even) td {
+  background: var(--bg-alt);
+}
+
+.preview hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+.preview img {
+  max-width: 100%;
+  border-radius: var(--r-md);
+}
+
+.preview ul,
+.preview ol {
+  padding-left: 1.4em;
+}
+
+/* 11. 코드블록 */
+.preview pre {
+  background: var(--bg-alt);
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  position: relative;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.preview code {
+  background: var(--bg-alt);
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.preview pre code {
+  background: none;
+  padding: 0;
+}
+
+/* 27. 코드블록 복사 버튼 */
+.preview pre .code-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--t-fast), color var(--t-fast);
+}
+.preview pre:hover .code-copy {
+  opacity: 1;
+}
+.preview pre .code-copy:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .connections {
   border-top: 1px solid var(--border);
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: var(--bg-alt);
   font-size: 12px;
 }
@@ -468,58 +823,75 @@ body {
   display: flex;
   gap: 8px;
   align-items: baseline;
-  margin: 3px 0;
+  margin: 4px 0;
   flex-wrap: wrap;
 }
 
 .conn-label {
   color: var(--text-dim);
   min-width: 44px;
+  font-weight: 600;
 }
 
+/* 15. 칩 hover */
 .tag-chip,
 .backlink {
   background: var(--accent-soft);
   color: var(--accent);
   border: none;
-  border-radius: 10px;
-  padding: 2px 9px;
+  border-radius: 999px;
+  padding: 2px 10px;
   margin: 0 4px 4px 0;
   cursor: pointer;
   font-size: 12px;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.tag-chip:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.tag-chip:active,
+.backlink:active {
+  transform: scale(0.94);
 }
 
 .backlink {
   background: none;
   text-decoration: underline;
 }
-
-.preview pre {
-  background: var(--bg-alt);
-  padding: 12px;
-  border-radius: 6px;
-  overflow-x: auto;
+.backlink:hover {
+  background: var(--accent-soft);
+  text-decoration: none;
 }
 
-.preview code {
-  background: var(--bg-alt);
-  padding: 1px 4px;
-  border-radius: 3px;
+/* 8. 토스트 애니메이션 + 변형 */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.error-toast {
+.error-toast,
+.success-toast {
   position: fixed;
   bottom: 16px;
   right: 16px;
-  background: #b91c1c;
   color: #fff;
-  padding: 10px 14px;
-  border-radius: 6px;
+  padding: 11px 15px;
+  border-radius: var(--r-md);
   font-size: 13px;
   max-width: 360px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  box-shadow: var(--sh-md);
+  animation: toast-in 0.22s ease;
+  z-index: 96;
+}
+.error-toast {
+  background: var(--danger);
+}
+.success-toast {
+  background: var(--success);
 }
 
 .toast-close {
@@ -528,6 +900,10 @@ body {
   color: #fff;
   cursor: pointer;
   font-size: 13px;
+  opacity: 0.85;
+}
+.toast-close:hover {
+  opacity: 1;
 }
 
 .conflict-banner {
@@ -544,13 +920,14 @@ body {
   justify-content: space-between;
   gap: 12px;
   z-index: 90;
+  box-shadow: var(--sh-sm);
 }
 
 .conflict-banner > button {
   background: #fff;
   color: #d97706;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   padding: 4px 10px;
   cursor: pointer;
   white-space: nowrap;
@@ -579,23 +956,37 @@ body {
   color: #fde68a;
 }
 
+/* 9. 로딩 스피너 */
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   color: #fff;
   display: flex;
+  flex-direction: column;
+  gap: 14px;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   z-index: 95;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .row-end {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .update-actions {
@@ -620,6 +1011,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: background var(--t-fast);
+  margin-top: auto;
+}
+.sidebar-footer:hover {
+  background: var(--border);
 }
 
 .dot {
@@ -630,30 +1026,44 @@ body {
 }
 
 .dot-on {
-  background: #16a34a;
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
 }
 
 .dot-off {
   background: #9ca3af;
 }
 
+/* 7. 모달 애니메이션 */
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  animation: backdrop-in 0.15s ease;
 }
 
 .modal {
   background: var(--bg);
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   padding: 20px 24px;
   width: 420px;
   max-width: 90vw;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--sh-lg);
+  animation: modal-in 0.2s ease;
 }
 
 .modal h2 {
@@ -668,16 +1078,36 @@ body {
 .modal button {
   padding: 7px 14px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   background: var(--accent);
   color: #fff;
   cursor: pointer;
   margin-right: 8px;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.modal button:hover {
+  background: var(--accent-hover);
+}
+.modal button:active {
+  transform: scale(0.97);
 }
 
 .modal .modal-close {
   background: var(--bg);
   color: var(--text);
+  border-color: var(--border);
+}
+.modal .modal-close:hover {
+  background: var(--bg-alt);
+}
+
+/* 23. 위험(삭제) 버튼 */
+.modal button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.modal button.danger:hover {
+  background: #b91c1c;
 }
 
 .modal .link {
@@ -691,11 +1121,19 @@ body {
 
 .text-input {
   width: 100%;
-  padding: 7px 9px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   margin: 8px 0;
   font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .user-code {
@@ -705,7 +1143,7 @@ body {
   text-align: center;
   padding: 12px;
   background: var(--bg-alt);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   margin: 8px 0;
 }
 
@@ -722,13 +1160,15 @@ body {
 
 .quickopen {
   background: var(--bg);
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   width: 520px;
   max-width: 90vw;
   margin-top: 12vh;
   align-self: flex-start;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--sh-lg);
   overflow: hidden;
+  animation: modal-in 0.2s ease;
 }
 
 .quickopen .text-input {
@@ -736,8 +1176,11 @@ body {
   border: none;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
-  padding: 12px 14px;
+  padding: 13px 16px;
   font-size: 15px;
+}
+.quickopen .text-input:focus {
+  box-shadow: none;
 }
 
 .quickopen-list {
@@ -755,8 +1198,8 @@ body {
   text-align: left;
   background: none;
   border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 7px 12px;
+  border-radius: var(--r-md);
   cursor: pointer;
   color: var(--text);
 }
@@ -773,6 +1216,22 @@ body {
 .qo-path {
   font-size: 11px;
   color: var(--text-dim);
+}
+
+/* 25. QuickOpen 키 힌트 푸터 */
+.qo-footer {
+  display: flex;
+  gap: 14px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-alt);
+}
+.qo-footer kbd {
+  margin-right: 4px;
+  font-size: 10px;
+  padding: 0 4px;
 }
 
 .settings-section {
@@ -793,4 +1252,47 @@ body {
 
 .footer-gear {
   margin-left: auto;
+  opacity: 0.7;
+}
+
+/* 30. 모바일: 탭 타깃 확대 + safe-area */
+@media (max-width: 720px) {
+  .tree-row,
+  .outline-item,
+  .quickopen-item {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .md-toolbar button {
+    padding: 7px 11px;
+    min-width: 36px;
+    font-size: 14px;
+  }
+  .icon-btn {
+    font-size: 18px;
+    padding: 6px 9px;
+  }
+  .tree-actions {
+    display: flex;
+  }
+  .sidebar-footer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .error-toast,
+  .success-toast {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 모션 최소화 환경 존중 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

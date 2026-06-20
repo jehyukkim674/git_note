@@ -64,6 +64,11 @@ export function QuickOpen({ onClose }: { onClose: () => void }) {
             </li>
           ))}
         </ul>
+        <div className="qo-footer">
+          <span><kbd>↑</kbd><kbd>↓</kbd> 이동</span>
+          <span><kbd>↵</kbd> 열기</span>
+          <span><kbd>esc</kbd> 닫기</span>
+        </div>
       </div>
     </div>
   );

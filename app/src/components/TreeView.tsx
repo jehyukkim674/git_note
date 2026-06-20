@@ -29,7 +29,12 @@ function DirNode({
           style={{ paddingLeft: depth! * 12 + 8 }}
           onClick={() => setOpen((o) => !o)}
         >
-          <span className="tree-caret">{open ? "▾" : "▸"}</span>
+          <span
+            className="tree-caret"
+            style={{ transform: open ? "rotate(90deg)" : "none" }}
+          >
+            ▸
+          </span>
           {node.name}
         </button>
         {rest.onNewInFolder && (

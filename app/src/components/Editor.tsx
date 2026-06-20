@@ -70,12 +70,21 @@ export function Editor({ value, onChange, saveImage }: Props) {
       <div className="md-toolbar">
         <button onClick={() => wrap("**")} title="굵게"><b>B</b></button>
         <button onClick={() => wrap("*")} title="기울임"><i>I</i></button>
+        <button onClick={() => wrap("~~")} title="취소선"><s>S</s></button>
+        <span className="toolbar-sep" aria-hidden="true" />
         <button onClick={() => prefixLine("# ")} title="제목1">H1</button>
         <button onClick={() => prefixLine("## ")} title="제목2">H2</button>
+        <button onClick={() => prefixLine("### ")} title="제목3">H3</button>
+        <span className="toolbar-sep" aria-hidden="true" />
         <button onClick={() => prefixLine("- ")} title="목록">•</button>
+        <button onClick={() => prefixLine("1. ")} title="번호 목록">1.</button>
         <button onClick={() => prefixLine("- [ ] ")} title="할 일">☑</button>
+        <button onClick={() => prefixLine("> ")} title="인용">❝</button>
+        <span className="toolbar-sep" aria-hidden="true" />
         <button onClick={() => wrap("`")} title="인라인 코드">{"</>"}</button>
+        <button onClick={() => wrap("\n```\n", "\n```\n")} title="코드 블록">{"{ }"}</button>
         <button onClick={() => wrap("[", "](url)")} title="링크">🔗</button>
+        <button onClick={() => prefixLine("---\n")} title="구분선">―</button>
       </div>
       <CodeMirror
         ref={ref}

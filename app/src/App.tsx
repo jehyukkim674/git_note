@@ -129,7 +129,20 @@ function App() {
 
   const overlays = (
     <>
-      {loading && <div className="loading-overlay">불러오는 중…</div>}
+      {loading && (
+        <div className="loading-overlay" role="status" aria-live="polite">
+          <span className="spinner" aria-hidden="true" />
+          <span>불러오는 중…</span>
+        </div>
+      )}
+      {exportMsg && (
+        <div className="success-toast" role="status" aria-live="polite">
+          <span>{exportMsg}</span>
+          <button className="toast-close" onClick={() => setExportMsg("")}>
+            ✕
+          </button>
+        </div>
+      )}
       {syncStatus === "conflict" && conflicts.length > 0 && (
         <div className="conflict-banner">
           <span>
@@ -150,7 +163,7 @@ function App() {
         </div>
       )}
       {error && (
-        <div className="error-toast">
+        <div className="error-toast" role="alert" aria-live="assertive">
           <span>{error}</span>
           <button className="toast-close" onClick={clearError}>
             ✕
@@ -197,11 +210,11 @@ function App() {
             ‹ 목록
           </button>
         )}
-        <span>{selectedPath ?? "노트를 선택하세요"}</span>
+        <span className="pane-title">{selectedPath ?? "노트를 선택하세요"}</span>
         <span className="header-right">
-          {selectedPath && !isMobile && (
+          {selectedPath && (
             <span className="word-count" title="단어 수 · 예상 읽기시간">
-              {exportMsg || `${wordInfo.words}단어 · ${wordInfo.mins}분`}
+              {wordInfo.words}단어 · {wordInfo.mins}분
             </span>
           )}
           {selectedPath && (
@@ -218,7 +231,13 @@ function App() {
             </button>
           )}
           {selectedPath && (
-            <button className="save-btn" onClick={save} disabled={!dirty}>
+            <button
+              className={"save-btn save-state" + (dirty ? " is-dirty" : "")}
+              onClick={save}
+              disabled={!dirty}
+              title={dirty ? "저장 (⌘S)" : "모든 변경사항 저장됨"}
+            >
+              <span className="save-dot" aria-hidden="true" />
               {dirty ? "저장" : "저장됨"}
             </button>
           )}
@@ -238,6 +257,7 @@ function App() {
         )
       ) : (
         <div className="empty">
+          <div className="empty-icon" aria-hidden="true">📝</div>
           <p>왼쪽에서 노트를 선택하거나 ＋로 새 노트를 만드세요.</p>
           {!config?.repo_url && (
             <p className="onboarding">
@@ -282,7 +302,7 @@ function App() {
       {editorPane}
       <section className="preview-pane">
         <div className="pane-header">
-          <span>미리보기</span>
+          <span className="pane-label">미리보기</span>
           <button
             className="save-btn"
             onClick={() => setShowOutline((s) => !s)}
