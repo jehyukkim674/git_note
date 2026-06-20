@@ -23,6 +23,8 @@
 - **Git**: Rust `git2`(libgit2), **HTTPS 전송만** 사용. Tauri command로 프론트에 노출.
 - **인증**: GitHub OAuth **device flow**. 토큰은 OS 보안 저장소(Mac Keychain / Android
   Keystore)에 저장.
+- **앱 자동 업데이트**: Mac은 `tauri-plugin-updater`로 GitHub Releases의 서명된 빌드를
+  감지·다운로드·설치. 안드로이드는 최신 릴리스를 감지해 APK 다운로드를 안내.
 
 ## 데이터 모델 (메모 ↔ 파일 매핑)
 
@@ -73,6 +75,16 @@
 - 토큰 만료 → 재인증 안내.
 - 병합 충돌 → 충돌 해결 UI.
 - push 거절 → 자동 pull 후 재시도.
+
+## 앱 자동 업데이트
+
+- **Mac (데스크톱)**: `tauri-plugin-updater` 사용. GitHub Releases에 업데이트 매니페스트와
+  서명된 빌드를 올리고, 앱 시작 시 새 버전을 확인 → 사용자 동의 후 다운로드·설치. 빌드 서명을
+  위한 키 페어 관리 필요.
+- **안드로이드**: Tauri updater가 동일하게 지원하지 않으므로, 최신 릴리스 태그를 조회해 새
+  버전이 있으면 알림을 띄우고 APK 다운로드 페이지로 안내(사이드로딩). 추후 Play Store 배포 시
+  스토어 업데이트로 대체 가능.
+- 업데이트 확인 시점: 앱 시작 시 1회 + 수동 "업데이트 확인" 메뉴.
 
 ## 테스트 전략
 

@@ -766,3 +766,4 @@ git commit -m "feat(git-core): clone/status를 Tauri command로 노출하고 프
 - **5단계 — 전체 검색**: 로컬 `.md` 즉석 grep(제목·본문).
 - **6단계 — 이미지/첨부**: `assets/`에 저장·상대경로 참조·함께 커밋, 미리보기에서 로컬 이미지 렌더.
 - **7단계 — 안드로이드 타깃**: `cargo-ndk`로 libgit2(HTTPS 전용) 크로스컴파일, `tauri android` 빌드, 모바일 스택 내비게이션 UI. 막히면 spec의 백업 플랜(안드로이드만 GitHub API).
+- **8단계 — 앱 자동 업데이트**: Mac은 `tauri-plugin-updater` + GitHub Releases(서명된 빌드/매니페스트)로 시작 시 새 버전 확인·설치. 안드로이드는 최신 릴리스 태그 조회 후 APK 다운로드 안내. "업데이트 확인" 메뉴 제공.
