@@ -11,6 +11,8 @@ interface AppStore {
   vaultPath: string | null;
   searchQuery: string;
   searchResults: SearchHit[];
+  loggedIn: boolean;
+  clientIdSet: boolean;
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
@@ -18,6 +20,8 @@ interface AppStore {
   setContent: (content: string) => void;
   save: () => Promise<void>;
   setSearchQuery: (query: string) => Promise<void>;
+  refreshAuth: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -30,18 +34,39 @@ export const useStore = create<AppStore>((set, get) => ({
   vaultPath: null,
   searchQuery: "",
   searchResults: [],
+  loggedIn: false,
+  clientIdSet: false,
 
   init: async () => {
     set({ loading: true, error: null });
     try {
       const cfg = await api.ensureVault();
-      set({ vaultPath: cfg.vault_path });
+      set({
+        vaultPath: cfg.vault_path,
+        clientIdSet: !!cfg.github_client_id,
+      });
       await get().loadTree();
+      await get().refreshAuth();
     } catch (e) {
       set({ error: String(e) });
     } finally {
       set({ loading: false });
     }
+  },
+
+  refreshAuth: async () => {
+    try {
+      const loggedIn = await api.githubLoggedIn();
+      const cfg = await api.getConfig();
+      set({ loggedIn, clientIdSet: !!cfg.github_client_id });
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  logout: async () => {
+    await api.githubLogout();
+    set({ loggedIn: false });
   },
 
   loadTree: async () => {

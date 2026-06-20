@@ -218,3 +218,112 @@ body {
   font-size: 13px;
   max-width: 360px;
 }
+
+.sidebar-footer {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-alt);
+  border: none;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-on {
+  background: #16a34a;
+}
+
+.dot-off {
+  background: #9ca3af;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 20px 24px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.modal .dim {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.modal button {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.modal .modal-close {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.modal .link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.text-input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.user-code {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-alt);
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.modal-msg {
+  font-size: 13px;
+  color: var(--text-dim);
+}

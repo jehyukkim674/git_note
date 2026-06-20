@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { TreeView } from "./TreeView";
 
-export function Sidebar() {
+export function Sidebar({ onOpenLogin }: { onOpenLogin: () => void }) {
   const {
     tree,
     selectedPath,
@@ -10,6 +10,7 @@ export function Sidebar() {
     searchQuery,
     searchResults,
     setSearchQuery,
+    loggedIn,
   } = useStore();
   const [local, setLocal] = useState("");
 
@@ -56,6 +57,11 @@ export function Sidebar() {
           onSelect={selectNote}
         />
       )}
+
+      <button className="sidebar-footer" onClick={onOpenLogin}>
+        <span className={loggedIn ? "dot dot-on" : "dot dot-off"} />
+        {loggedIn ? "GitHub 연결됨" : "GitHub 로그인"}
+      </button>
     </aside>
   );
 }

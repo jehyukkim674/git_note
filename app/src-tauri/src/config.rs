@@ -14,6 +14,8 @@ pub struct AppConfig {
     pub branch: String,
     pub author_name: String,
     pub author_email: String,
+    /// GitHub OAuth App client_id(공개값). device flow에 사용.
+    pub github_client_id: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -24,6 +26,7 @@ impl Default for AppConfig {
             branch: "main".to_string(),
             author_name: "git_note".to_string(),
             author_email: "git_note@example.com".to_string(),
+            github_client_id: None,
         }
     }
 }

@@ -1,5 +1,6 @@
 mod git_core;
 mod vault;
+mod auth;
 mod config;
 mod commands;
 
@@ -35,6 +36,11 @@ pub fn run() {
             commands::delete_note,
             commands::search_notes,
             commands::save_asset,
+            commands::set_github_client_id,
+            commands::github_start_device_flow,
+            commands::github_poll,
+            commands::github_logged_in,
+            commands::github_logout,
             commands::clone_repo,
             commands::changed_paths
         ])

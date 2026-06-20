@@ -1,9 +1,30 @@
 use std::fs;
 use std::path::PathBuf;
 use tauri::State;
+use crate::auth;
 use crate::config::{AppConfig, AppState};
 use crate::git_core::repo;
 use crate::vault;
+
+/// 설정 또는 환경변수에서 GitHub client_id를 얻는다.
+fn client_id(state: &AppState) -> Result<String, String> {
+    if let Ok(v) = std::env::var("GITHUB_CLIENT_ID") {
+        if !v.is_empty() {
+            return Ok(v);
+        }
+    }
+    state
+        .config
+        .lock()
+        .unwrap()
+        .github_client_id
+        .clone()
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            "GitHub client_id가 설정되지 않았습니다. 설정에서 OAuth App client_id를 입력하세요."
+                .to_string()
+        })
+}
 
 /// 설정된 보관함 루트 경로를 돌려준다.
 fn vault_root(state: &AppState) -> Result<PathBuf, String> {
@@ -77,6 +98,51 @@ pub fn delete_note(state: State<AppState>, rel: String) -> Result<(), String> {
 pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {
     let root = vault_root(&state)?;
     vault::search(&root, &query).map_err(|e| e.to_string())
+}
+
+/// GitHub OAuth App client_id를 저장한다.
+#[tauri::command]
+pub fn set_github_client_id(state: State<AppState>, client_id: String) -> Result<(), String> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.github_client_id = Some(client_id);
+    cfg.save(&state.config_path).map_err(|e| e.to_string())
+}
+
+/// device flow를 시작한다(user_code/verification_uri 반환).
+#[tauri::command]
+pub async fn github_start_device_flow(
+    state: State<'_, AppState>,
+) -> Result<auth::DeviceCodeResponse, String> {
+    let cid = client_id(&state)?;
+    auth::start_device_flow(&cid).await
+}
+
+/// 토큰을 한 번 폴링한다. Authorized면 토큰을 키체인에 저장.
+#[tauri::command]
+pub async fn github_poll(
+    state: State<'_, AppState>,
+    device_code: String,
+) -> Result<auth::PollStatus, String> {
+    let cid = client_id(&state)?;
+    let (status, token) = auth::poll_once(&cid, &device_code).await?;
+    if status == auth::PollStatus::Authorized {
+        if let Some(tok) = token {
+            auth::store_token(&tok)?;
+        }
+    }
+    Ok(status)
+}
+
+/// 로그인(토큰 보유) 여부.
+#[tauri::command]
+pub fn github_logged_in() -> bool {
+    auth::get_token().is_some()
+}
+
+/// 로그아웃(토큰 삭제).
+#[tauri::command]
+pub fn github_logout() -> Result<(), String> {
+    auth::delete_token()
 }
 
 /// 이미지/첨부를 assets/에 저장하고 상대경로를 돌려준다.
