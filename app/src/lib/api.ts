@@ -77,6 +77,7 @@ export const api = {
     invoke<string>("export_html", { rel, html }),
   createFolder: (rel: string) => invoke<void>("create_folder", { rel }),
   backlinks: (name: string) => invoke<string[]>("backlinks", { name }),
+  vaultStats: () => invoke<{ notes: number; folders: number }>("vault_stats"),
   searchNotes: (query: string) => invoke<SearchHit[]>("search_notes", { query }),
   saveAsset: (filename: string, bytes: number[]) =>
     invoke<string>("save_asset", { filename, bytes }),

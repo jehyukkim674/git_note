@@ -235,6 +235,37 @@ pub struct SearchHit {
 
 const SNIPPET_MAX: usize = 120;
 
+/// 보관함 통계.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct Stats {
+    pub notes: usize,
+    pub folders: usize,
+}
+
+/// 보관함의 노트(.md) 수와 폴더 수를 센다(숨김 제외).
+pub fn stats(root: &Path) -> Result<Stats, GitError> {
+    let mut s = Stats { notes: 0, folders: 0 };
+    stats_dir(root, &mut s)?;
+    Ok(s)
+}
+
+fn stats_dir(dir: &Path, s: &mut Stats) -> Result<(), GitError> {
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        if is_hidden(&name) {
+            continue;
+        }
+        if entry.file_type()?.is_dir() {
+            s.folders += 1;
+            stats_dir(&entry.path(), s)?;
+        } else if name.ends_with(".md") {
+            s.notes += 1;
+        }
+    }
+    Ok(())
+}
+
 /// `name` 노트를 [[위키링크]]로 참조하는 노트들의 경로를 돌려준다.
 pub fn backlinks(root: &Path, name: &str) -> Result<Vec<String>, GitError> {
     let base = name.trim_end_matches(".md");
@@ -487,6 +518,16 @@ mod tests {
         let dir = temp_root();
         write_note(dir.path(), "x.md", "no links").unwrap();
         assert!(backlinks(dir.path(), "target").unwrap().is_empty());
+    }
+
+    #[test]
+    fn stats_counts_notes_and_folders() {
+        let dir = temp_root();
+        write_note(dir.path(), "a.md", "x").unwrap();
+        write_note(dir.path(), "folder/b.md", "y").unwrap();
+        write_note(dir.path(), "folder/c.md", "z").unwrap();
+        std::fs::write(dir.path().join("ignore.txt"), "t").unwrap();
+        assert_eq!(stats(dir.path()).unwrap(), Stats { notes: 3, folders: 1 });
     }
 
     #[test]

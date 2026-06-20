@@ -50,7 +50,9 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
   const [exportMsg, setExportMsg] = useState("");
-  const [appDialog, setAppDialog] = useState<"newNote" | "newFolder" | null>(null);
+  const [appDialog, setAppDialog] = useState<
+    { kind: "newNote"; initial?: string } | { kind: "newFolder" } | null
+  >(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const [showOutline, setShowOutline] = useState(false);
   const isMobile = useMediaQuery("(max-width: 720px)");
@@ -92,7 +94,7 @@ function App() {
         save();
       } else if (e.key === "n") {
         e.preventDefault();
-        setAppDialog("newNote");
+        setAppDialog({ kind: "newNote" });
       } else if (e.key === "k" || e.key === "p") {
         e.preventDefault();
         setQuickOpen(true);
@@ -157,10 +159,11 @@ function App() {
       )}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {quickOpen && <QuickOpen onClose={() => setQuickOpen(false)} />}
-      {appDialog === "newNote" && (
+      {appDialog?.kind === "newNote" && (
         <Dialog
           title="새 노트"
           mode="input"
+          initial={appDialog.initial ?? ""}
           message="경로 입력 (예: 폴더/메모). .md는 자동으로 붙습니다."
           confirmLabel="생성"
           onSubmit={(v) => {
@@ -170,7 +173,7 @@ function App() {
           onCancel={() => setAppDialog(null)}
         />
       )}
-      {appDialog === "newFolder" && (
+      {appDialog?.kind === "newFolder" && (
         <Dialog
           title="새 폴더"
           mode="input"
@@ -234,7 +237,18 @@ function App() {
           <Editor value={content} onChange={setContent} saveImage={saveImage} />
         )
       ) : (
-        <div className="empty">왼쪽에서 노트를 선택하거나 새로 만드세요.</div>
+        <div className="empty">
+          <p>왼쪽에서 노트를 선택하거나 ＋로 새 노트를 만드세요.</p>
+          {!config?.repo_url && (
+            <p className="onboarding">
+              지금은 로컬에만 저장됩니다. 기기 간 동기화를 켜려면{" "}
+              <button className="link" onClick={() => setSettingsOpen(true)}>
+                설정에서 GitHub 저장소 연결
+              </button>
+              .
+            </p>
+          )}
+        </div>
       )}
     </section>
   );
@@ -247,8 +261,9 @@ function App() {
         ) : (
           <Sidebar
             onOpenSettings={() => setSettingsOpen(true)}
-            onNewNote={() => setAppDialog("newNote")}
-            onNewFolder={() => setAppDialog("newFolder")}
+            onNewNote={() => setAppDialog({ kind: "newNote" })}
+            onNewFolder={() => setAppDialog({ kind: "newFolder" })}
+            onNewInFolder={(dir) => setAppDialog({ kind: "newNote", initial: `${dir}/` })}
           />
         )}
         {overlays}
@@ -260,8 +275,9 @@ function App() {
     <div className={`app font-${fontSize}`}>
       <Sidebar
             onOpenSettings={() => setSettingsOpen(true)}
-            onNewNote={() => setAppDialog("newNote")}
-            onNewFolder={() => setAppDialog("newFolder")}
+            onNewNote={() => setAppDialog({ kind: "newNote" })}
+            onNewFolder={() => setAppDialog({ kind: "newFolder" })}
+            onNewInFolder={(dir) => setAppDialog({ kind: "newNote", initial: `${dir}/` })}
           />
       {editorPane}
       <section className="preview-pane">

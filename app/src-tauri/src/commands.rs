@@ -159,6 +159,13 @@ pub fn backlinks(state: State<AppState>, name: String) -> Result<Vec<String>, St
     vault::backlinks(&root, &name).map_err(|e| e.to_string())
 }
 
+/// 보관함 통계(노트/폴더 수).
+#[tauri::command]
+pub fn vault_stats(state: State<AppState>) -> Result<vault::Stats, String> {
+    let root = vault_root(&state)?;
+    vault::stats(&root).map_err(|e| e.to_string())
+}
+
 /// 제목/본문 전체 검색.
 #[tauri::command]
 pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {
@@ -194,6 +201,17 @@ pub async fn github_poll(
     if status == auth::PollStatus::Authorized {
         if let Some(tok) = token {
             auth::store_token(&tok)?;
+            // 작성자가 기본값이면 GitHub 사용자로 자동 설정
+            if let Ok(user) = auth::fetch_user(&tok).await {
+                let mut cfg = state.config.lock().unwrap();
+                if cfg.author_name == "git_note" {
+                    cfg.author_email = user
+                        .email
+                        .unwrap_or_else(|| format!("{}@users.noreply.github.com", user.login));
+                    cfg.author_name = user.login;
+                    let _ = cfg.save(&state.config_path);
+                }
+            }
         }
     }
     Ok(status)

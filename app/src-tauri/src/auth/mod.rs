@@ -40,6 +40,38 @@ pub fn classify_token_response(json: &serde_json::Value) -> PollStatus {
     }
 }
 
+/// GitHub 사용자 정보(커밋 작성자 자동 설정용).
+#[derive(Debug, PartialEq)]
+pub struct GitHubUser {
+    pub login: String,
+    pub email: Option<String>,
+}
+
+/// /user 응답 JSON을 파싱한다(순수 함수 — 테스트 대상).
+pub fn parse_user(json: &serde_json::Value) -> Option<GitHubUser> {
+    let login = json.get("login")?.as_str()?.to_string();
+    let email = json
+        .get("email")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    Some(GitHubUser { login, email })
+}
+
+/// 인증된 사용자 정보를 가져온다.
+pub async fn fetch_user(token: &str) -> Result<GitHubUser, String> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .get("https://api.github.com/user")
+        .header("Accept", "application/vnd.github+json")
+        .header("User-Agent", "git_note")
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let json: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    parse_user(&json).ok_or_else(|| "사용자 정보를 파싱할 수 없습니다".to_string())
+}
+
 /// device flow를 시작한다.
 pub async fn start_device_flow(client_id: &str) -> Result<DeviceCodeResponse, String> {
     let client = reqwest::Client::new();
@@ -146,5 +178,31 @@ mod tests {
             classify_token_response(&json!({ "error": "weird" })),
             PollStatus::Error(_)
         ));
+    }
+
+    #[test]
+    fn parse_user_extracts_login_and_email() {
+        let j = json!({ "login": "octocat", "email": "o@example.com" });
+        assert_eq!(
+            parse_user(&j),
+            Some(GitHubUser {
+                login: "octocat".into(),
+                email: Some("o@example.com".into())
+            })
+        );
+    }
+
+    #[test]
+    fn parse_user_handles_null_email() {
+        let j = json!({ "login": "octocat", "email": null });
+        assert_eq!(
+            parse_user(&j),
+            Some(GitHubUser { login: "octocat".into(), email: None })
+        );
+    }
+
+    #[test]
+    fn parse_user_none_without_login() {
+        assert_eq!(parse_user(&json!({ "id": 1 })), None);
     }
 }
