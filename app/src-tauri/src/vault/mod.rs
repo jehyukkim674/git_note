@@ -235,6 +235,51 @@ pub struct SearchHit {
 
 const SNIPPET_MAX: usize = 120;
 
+/// `name` 노트를 [[위키링크]]로 참조하는 노트들의 경로를 돌려준다.
+pub fn backlinks(root: &Path, name: &str) -> Result<Vec<String>, GitError> {
+    let base = name.trim_end_matches(".md");
+    let needle_exact = format!("[[{base}]]");
+    let needle_alias = format!("[[{base}|");
+    let mut out = Vec::new();
+    backlinks_dir(root, root, &needle_exact, &needle_alias, &mut out)?;
+    out.sort();
+    Ok(out)
+}
+
+fn backlinks_dir(
+    root: &Path,
+    dir: &Path,
+    needle_exact: &str,
+    needle_alias: &str,
+    out: &mut Vec<String>,
+) -> Result<(), GitError> {
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        if is_hidden(&name) {
+            continue;
+        }
+        let path = entry.path();
+        if entry.file_type()?.is_dir() {
+            backlinks_dir(root, &path, needle_exact, needle_alias, out)?;
+            continue;
+        }
+        if !name.ends_with(".md") {
+            continue;
+        }
+        let content = fs::read_to_string(&path)?;
+        if content.contains(needle_exact) || content.contains(needle_alias) {
+            let rel = path
+                .strip_prefix(root)
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            out.push(rel);
+        }
+    }
+    Ok(())
+}
+
 /// 제목(파일명)과 본문에서 query(대소문자 무시)를 검색한다.
 pub fn search(root: &Path, query: &str) -> Result<Vec<SearchHit>, GitError> {
     let mut hits = Vec::new();
@@ -424,6 +469,24 @@ mod tests {
         write_note(dir.path(), "shopping.md", "milk").unwrap();
         let hits = search(dir.path(), "shop").unwrap();
         assert!(hits.iter().any(|h| h.line == 0 && h.snippet == "shopping"));
+    }
+
+    #[test]
+    fn backlinks_finds_referencing_notes() {
+        let dir = temp_root();
+        write_note(dir.path(), "target.md", "내용").unwrap();
+        write_note(dir.path(), "a.md", "보라 [[target]] 링크").unwrap();
+        write_note(dir.path(), "b.md", "별 관계 없음").unwrap();
+        write_note(dir.path(), "c.md", "별칭 [[target|다른이름]]").unwrap();
+        let links = backlinks(dir.path(), "target").unwrap();
+        assert_eq!(links, vec!["a.md".to_string(), "c.md".to_string()]);
+    }
+
+    #[test]
+    fn backlinks_empty_when_none() {
+        let dir = temp_root();
+        write_note(dir.path(), "x.md", "no links").unwrap();
+        assert!(backlinks(dir.path(), "target").unwrap().is_empty());
     }
 
     #[test]

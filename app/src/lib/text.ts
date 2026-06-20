@@ -11,6 +11,23 @@ export function ownerRepoFromUrl(url: string | null | undefined): string | null 
   return m ? `${m[1]}/${m[2]}` : null;
 }
 
+/// 본문에서 #태그를 추출한다(헤딩 `# ` 제외, 중복 제거, 순서 유지).
+export function extractTags(content: string): string[] {
+  const body = stripFrontmatter(content);
+  const re = /(?:^|\s)#([\p{L}\d][\p{L}\d_-]*)/gu;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const m of body.matchAll(re)) {
+    const tag = m[1];
+    if (/^\d+$/.test(tag)) continue; // 순수 숫자(#1 등 이슈번호) 오탐 제외
+    if (!seen.has(tag)) {
+      seen.add(tag);
+      out.push(tag);
+    }
+  }
+  return out;
+}
+
 /// git 병합 충돌 마커(<<<<<<< / ======= / >>>>>>>)가 본문에 남아있는지 검사한다.
 export function hasConflictMarkers(content: string): boolean {
   return /^(<{7}|={7}|>{7})/m.test(content);

@@ -53,6 +53,7 @@ interface AppStore {
   pinned: string[];
   sortBy: "name" | "modified";
   fontSize: "sm" | "md" | "lg";
+  backlinks: string[];
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
@@ -130,6 +131,7 @@ export const useStore = create<AppStore>((set, get) => ({
   pinned: loadList("pinned"),
   sortBy: "name",
   fontSize: initialFontSize(),
+  backlinks: [],
 
   init: async () => {
     set({ loading: true, error: null });
@@ -165,6 +167,14 @@ export const useStore = create<AppStore>((set, get) => ({
         localStorage.setItem("recent", JSON.stringify(recent));
       }
       set({ selectedPath: path, content, dirty: false, error: null, recent });
+      // 백링크 로드(노트 파일명 기준)
+      const base = path.split("/").pop()?.replace(/\.md$/, "") ?? "";
+      try {
+        const backlinks = await api.backlinks(base);
+        set({ backlinks: backlinks.filter((p) => p !== path) });
+      } catch {
+        set({ backlinks: [] });
+      }
     } catch (e) {
       set({ error: String(e) });
     }

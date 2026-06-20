@@ -11,6 +11,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { QuickOpen } from "./components/QuickOpen";
 import { Dialog } from "./components/Dialog";
 import { Outline } from "./components/Outline";
+import { Connections } from "./components/Connections";
 import "./App.css";
 
 async function saveImage(file: File): Promise<string> {
@@ -31,6 +32,8 @@ function App() {
     conflicts,
     config,
     fontSize,
+    backlinks,
+    setSearchQuery,
     init,
     selectNote,
     setContent,
@@ -274,6 +277,14 @@ function App() {
         </div>
         {showOutline && <Outline content={content} />}
         <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
+        {selectedPath && (
+          <Connections
+            content={content}
+            backlinks={backlinks}
+            onTag={(t) => setSearchQuery(`#${t}`)}
+            onOpen={selectNote}
+          />
+        )}
       </section>
 
       {overlays}

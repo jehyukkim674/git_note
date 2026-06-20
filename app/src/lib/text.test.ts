@@ -5,6 +5,7 @@ import {
   slugify,
   extractHeadings,
   hasConflictMarkers,
+  extractTags,
 } from "./text";
 
 describe("stripFrontmatter", () => {
@@ -42,6 +43,19 @@ describe("slugify", () => {
   });
   it("한글을 보존한다", () => {
     expect(slugify("회의 노트")).toBe("회의-노트");
+  });
+});
+
+describe("extractTags", () => {
+  it("#태그를 추출하고 헤딩은 제외한다", () => {
+    const md = "# 제목\n본문 #work 그리고 #idea-2 또 #work 중복";
+    expect(extractTags(md)).toEqual(["work", "idea-2"]);
+  });
+  it("태그가 없으면 빈 배열", () => {
+    expect(extractTags("# 제목\n그냥 본문")).toEqual([]);
+  });
+  it("순수 숫자(#1 등)는 태그로 보지 않는다", () => {
+    expect(extractTags("이슈 #1 와 #2026 그리고 #v2")).toEqual(["v2"]);
   });
 });
 

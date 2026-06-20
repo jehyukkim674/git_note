@@ -64,6 +64,11 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
     return () => clearTimeout(t);
   }, [local, setSearchQuery]);
 
+  // 외부에서 검색어가 바뀌면(예: 태그 클릭) 입력창에도 반영
+  useEffect(() => {
+    setLocal((prev) => (prev === searchQuery ? prev : searchQuery));
+  }, [searchQuery]);
+
   const searching = searchQuery.trim() !== "";
   const sortedTree = useMemo(() => sortTree(tree, sortBy), [tree, sortBy]);
 
