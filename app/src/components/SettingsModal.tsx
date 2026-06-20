@@ -14,6 +14,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     loggedIn,
     config,
     syncStatus,
+    fontSize,
+    setFontSize,
     refreshAuth,
     logout,
     connectRepo,
@@ -219,6 +221,21 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           <div className="row-between">
             <span className="dim">상태: {syncStatus}</span>
             <button onClick={() => syncNow()}>지금 동기화</button>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>편집기 글꼴</h3>
+          <div className="font-buttons">
+            {(["sm", "md", "lg"] as const).map((s) => (
+              <button
+                key={s}
+                className={fontSize === s ? "active" : ""}
+                onClick={() => setFontSize(s)}
+              >
+                {s === "sm" ? "작게" : s === "md" ? "보통" : "크게"}
+              </button>
+            ))}
           </div>
         </section>
 

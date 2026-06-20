@@ -290,6 +290,66 @@ body {
   overflow: auto;
 }
 
+.editor-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-wrap > .cm-theme,
+.editor-wrap > .cm-editor {
+  flex: 1;
+  overflow: auto;
+}
+
+.md-toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.md-toolbar button {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  padding: 3px 7px;
+}
+
+.md-toolbar button:hover {
+  background: var(--accent-soft);
+}
+
+.font-sm .cm-content,
+.font-sm .preview {
+  font-size: 12px;
+}
+
+.font-md .cm-content,
+.font-md .preview {
+  font-size: 14px;
+}
+
+.font-lg .cm-content,
+.font-lg .preview {
+  font-size: 17px;
+}
+
+.font-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.font-buttons button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .empty {
   flex: 1;
   display: flex;
@@ -512,6 +572,61 @@ body {
   width: 480px;
   max-height: 86vh;
   overflow-y: auto;
+}
+
+.quickopen {
+  background: var(--bg);
+  border-radius: 10px;
+  width: 520px;
+  max-width: 90vw;
+  margin-top: 12vh;
+  align-self: flex-start;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.quickopen .text-input {
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 12px 14px;
+  font-size: 15px;
+}
+
+.quickopen-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.quickopen-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.quickopen-item.active {
+  background: var(--accent-soft);
+}
+
+.qo-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.qo-path {
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .settings-section {

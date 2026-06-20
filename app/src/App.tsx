@@ -7,6 +7,8 @@ import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
 import { Preview } from "./components/Preview";
 import { SettingsModal } from "./components/SettingsModal";
+import { QuickOpen } from "./components/QuickOpen";
+import { Dialog } from "./components/Dialog";
 import "./App.css";
 
 async function saveImage(file: File): Promise<string> {
@@ -26,6 +28,7 @@ function App() {
     syncStatus,
     conflicts,
     config,
+    fontSize,
     init,
     setContent,
     save,
@@ -35,10 +38,14 @@ function App() {
     clearError,
     syncNow,
     openByName,
+    createNote,
+    createFolder,
   } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
   const [exportMsg, setExportMsg] = useState("");
+  const [appDialog, setAppDialog] = useState<"newNote" | "newFolder" | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 720px)");
 
   const wordInfo = useMemo(() => {
@@ -70,9 +77,16 @@ function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "s") {
         e.preventDefault();
         save();
+      } else if (e.key === "n") {
+        e.preventDefault();
+        setAppDialog("newNote");
+      } else if (e.key === "k" || e.key === "p") {
+        e.preventDefault();
+        setQuickOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -93,6 +107,15 @@ function App() {
     return () => clearTimeout(t);
   }, [content, selectedPath, config?.repo_url, pushChanges]);
 
+  // 창 포커스 복귀 시 자동 pull(스펙)
+  useEffect(() => {
+    const onFocus = () => {
+      if (config?.repo_url) syncNow();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [config?.repo_url, syncNow]);
+
   const overlays = (
     <>
       {loading && <div className="loading-overlay">불러오는 중…</div>}
@@ -111,6 +134,33 @@ function App() {
         </div>
       )}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {quickOpen && <QuickOpen onClose={() => setQuickOpen(false)} />}
+      {appDialog === "newNote" && (
+        <Dialog
+          title="새 노트"
+          mode="input"
+          message="경로 입력 (예: 폴더/메모). .md는 자동으로 붙습니다."
+          confirmLabel="생성"
+          onSubmit={(v) => {
+            if (v.trim()) createNote(v.trim());
+            setAppDialog(null);
+          }}
+          onCancel={() => setAppDialog(null)}
+        />
+      )}
+      {appDialog === "newFolder" && (
+        <Dialog
+          title="새 폴더"
+          mode="input"
+          message="폴더 경로 입력 (예: 프로젝트/2026)"
+          confirmLabel="생성"
+          onSubmit={(v) => {
+            if (v.trim()) createFolder(v.trim());
+            setAppDialog(null);
+          }}
+          onCancel={() => setAppDialog(null)}
+        />
+      )}
     </>
   );
 
@@ -163,11 +213,15 @@ function App() {
 
   if (isMobile) {
     return (
-      <div className="app app-mobile">
+      <div className={`app app-mobile font-${fontSize}`}>
         {selectedPath ? (
           editorPane
         ) : (
-          <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
+          <Sidebar
+            onOpenSettings={() => setSettingsOpen(true)}
+            onNewNote={() => setAppDialog("newNote")}
+            onNewFolder={() => setAppDialog("newFolder")}
+          />
         )}
         {overlays}
       </div>
@@ -175,8 +229,12 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
+    <div className={`app font-${fontSize}`}>
+      <Sidebar
+            onOpenSettings={() => setSettingsOpen(true)}
+            onNewNote={() => setAppDialog("newNote")}
+            onNewFolder={() => setAppDialog("newFolder")}
+          />
       {editorPane}
       <section className="preview-pane">
         <div className="pane-header">미리보기</div>

@@ -145,6 +145,13 @@ pub fn export_html(state: State<AppState>, rel: String, html: String) -> Result<
     vault::export_html(&root, &rel, &html).map_err(|e| e.to_string())
 }
 
+/// 폴더를 생성한다.
+#[tauri::command]
+pub fn create_folder(state: State<AppState>, rel: String) -> Result<(), String> {
+    let root = vault_root(&state)?;
+    vault::create_folder(&root, &rel).map_err(|e| e.to_string())
+}
+
 /// 제목/본문 전체 검색.
 #[tauri::command]
 pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {

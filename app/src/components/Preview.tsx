@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { renderMarkdown } from "../lib/markdown";
 
 interface Props {
@@ -14,10 +15,20 @@ export function Preview({ content, vaultPath, onWikiLink }: Props) {
   );
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = (e.target as HTMLElement).closest("a[data-wikilink]");
-    if (target && onWikiLink) {
+    const anchor = (e.target as HTMLElement).closest("a");
+    if (!anchor) return;
+
+    const wiki = anchor.getAttribute("data-wikilink");
+    if (wiki !== null) {
       e.preventDefault();
-      onWikiLink(target.getAttribute("data-wikilink") ?? "");
+      onWikiLink?.(wiki);
+      return;
+    }
+    // 외부 링크는 webview를 이탈시키지 않고 기본 브라우저로 연다.
+    const href = anchor.getAttribute("href") ?? "";
+    if (/^https?:/i.test(href)) {
+      e.preventDefault();
+      void openUrl(href);
     }
   };
 

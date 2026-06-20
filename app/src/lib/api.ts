@@ -80,6 +80,7 @@ export const api = {
     invoke<void>("rename_note", { from, to }),
   exportHtml: (rel: string, html: string) =>
     invoke<string>("export_html", { rel, html }),
+  createFolder: (rel: string) => invoke<void>("create_folder", { rel }),
   searchNotes: (query: string) => invoke<SearchHit[]>("search_notes", { query }),
   saveAsset: (filename: string, bytes: number[]) =>
     invoke<string>("save_asset", { filename, bytes }),
