@@ -28,6 +28,7 @@ function App() {
     syncStatus,
     conflicts,
     config,
+    fontSize,
     init,
     setContent,
     save,
@@ -105,6 +106,15 @@ function App() {
     const t = setTimeout(() => pushChanges("auto sync"), 10000);
     return () => clearTimeout(t);
   }, [content, selectedPath, config?.repo_url, pushChanges]);
+
+  // 창 포커스 복귀 시 자동 pull(스펙)
+  useEffect(() => {
+    const onFocus = () => {
+      if (config?.repo_url) syncNow();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [config?.repo_url, syncNow]);
 
   const overlays = (
     <>
@@ -203,7 +213,7 @@ function App() {
 
   if (isMobile) {
     return (
-      <div className="app app-mobile">
+      <div className={`app app-mobile font-${fontSize}`}>
         {selectedPath ? (
           editorPane
         ) : (
@@ -219,7 +229,7 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app font-${fontSize}`}>
       <Sidebar
             onOpenSettings={() => setSettingsOpen(true)}
             onNewNote={() => setAppDialog("newNote")}

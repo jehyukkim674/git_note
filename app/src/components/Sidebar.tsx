@@ -51,6 +51,8 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
     renameNote,
     deleteNote,
     recent,
+    pinned,
+    togglePin,
     sortBy,
     setSortBy,
   } = useStore();
@@ -114,6 +116,24 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
         <div className="tree-empty">노트가 없습니다. ＋로 새 노트를 만드세요.</div>
       ) : (
         <>
+          {pinned.length > 0 && (
+            <div className="recent">
+              <div className="recent-title">고정</div>
+              {pinned.map((path) => (
+                <button
+                  key={path}
+                  className={
+                    "tree-row tree-file recent-item" +
+                    (path === selectedPath ? " selected" : "")
+                  }
+                  onClick={() => selectNote(path)}
+                  title={path}
+                >
+                  ★ {path.split("/").pop()?.replace(/\.md$/, "")}
+                </button>
+              ))}
+            </div>
+          )}
           {recent.length > 0 && (
             <div className="recent">
               <div className="recent-title">최근</div>
@@ -138,6 +158,8 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
             onSelect={selectNote}
             onRename={(path) => setDialog({ kind: "rename", path })}
             onDelete={(path) => setDialog({ kind: "delete", path })}
+            onPin={togglePin}
+            pinned={pinned}
           />
         </>
       )}

@@ -50,7 +50,9 @@ interface AppStore {
   conflicts: string[];
   theme: "light" | "dark";
   recent: string[];
+  pinned: string[];
   sortBy: "name" | "modified";
+  fontSize: "sm" | "md" | "lg";
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
@@ -73,6 +75,8 @@ interface AppStore {
   clearError: () => void;
   toggleTheme: () => void;
   setSortBy: (sortBy: "name" | "modified") => void;
+  togglePin: (path: string) => void;
+  setFontSize: (fontSize: "sm" | "md" | "lg") => void;
 }
 
 function initialTheme(): "light" | "dark" {
@@ -93,12 +97,17 @@ function ensureMd(path: string): string {
   return path.endsWith(".md") ? path : `${path}.md`;
 }
 
-function loadRecent(): string[] {
+function loadList(key: string): string[] {
   try {
-    return JSON.parse(localStorage.getItem("recent") || "[]");
+    return JSON.parse(localStorage.getItem(key) || "[]");
   } catch {
     return [];
   }
+}
+
+function initialFontSize(): "sm" | "md" | "lg" {
+  const v = typeof localStorage !== "undefined" ? localStorage.getItem("fontSize") : null;
+  return v === "sm" || v === "lg" ? v : "md";
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -117,8 +126,10 @@ export const useStore = create<AppStore>((set, get) => ({
   syncStatus: "idle",
   conflicts: [],
   theme: initialTheme(),
-  recent: loadRecent(),
+  recent: loadList("recent"),
+  pinned: loadList("pinned"),
   sortBy: "name",
+  fontSize: initialFontSize(),
 
   init: async () => {
     set({ loading: true, error: null });
@@ -258,6 +269,21 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setSortBy: (sortBy) => set({ sortBy }),
+
+  togglePin: (path: string) => {
+    const pinned = get().pinned.includes(path)
+      ? get().pinned.filter((p) => p !== path)
+      : [...get().pinned, path];
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("pinned", JSON.stringify(pinned));
+    }
+    set({ pinned });
+  },
+
+  setFontSize: (fontSize) => {
+    if (typeof localStorage !== "undefined") localStorage.setItem("fontSize", fontSize);
+    set({ fontSize });
+  },
 
   clearError: () => set({ error: null }),
 

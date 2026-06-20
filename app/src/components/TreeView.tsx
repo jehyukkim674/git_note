@@ -7,6 +7,8 @@ interface Props {
   onSelect: (path: string) => void;
   onRename?: (path: string) => void;
   onDelete?: (path: string) => void;
+  onPin?: (path: string) => void;
+  pinned?: string[];
   depth?: number;
 }
 
@@ -38,6 +40,8 @@ export function TreeView({
   onSelect,
   onRename,
   onDelete,
+  onPin,
+  pinned,
   depth = 0,
 }: Props) {
   return (
@@ -52,6 +56,8 @@ export function TreeView({
             onSelect={onSelect}
             onRename={onRename}
             onDelete={onDelete}
+            onPin={onPin}
+            pinned={pinned}
             depth={depth}
           />
         ) : (
@@ -67,6 +73,15 @@ export function TreeView({
               {node.name.replace(/\.md$/, "")}
             </button>
             <span className="tree-actions">
+              {onPin && (
+                <button
+                  className="tree-action"
+                  title="고정"
+                  onClick={() => onPin(node.path)}
+                >
+                  {pinned?.includes(node.path) ? "★" : "☆"}
+                </button>
+              )}
               {onRename && (
                 <button
                   className="tree-action"

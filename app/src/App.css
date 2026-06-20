@@ -290,6 +290,66 @@ body {
   overflow: auto;
 }
 
+.editor-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-wrap > .cm-theme,
+.editor-wrap > .cm-editor {
+  flex: 1;
+  overflow: auto;
+}
+
+.md-toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.md-toolbar button {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  padding: 3px 7px;
+}
+
+.md-toolbar button:hover {
+  background: var(--accent-soft);
+}
+
+.font-sm .cm-content,
+.font-sm .preview {
+  font-size: 12px;
+}
+
+.font-md .cm-content,
+.font-md .preview {
+  font-size: 14px;
+}
+
+.font-lg .cm-content,
+.font-lg .preview {
+  font-size: 17px;
+}
+
+.font-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.font-buttons button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .empty {
   flex: 1;
   display: flex;

@@ -58,6 +58,14 @@ pub fn pull_repo(
         return Ok(SyncResult::NoRepo);
     }
     let repository = repo::open_repo(root).map_err(|e| e.to_string())?;
+
+    // 병합/체크아웃이 미커밋 로컬 변경을 덮어쓰지 않도록 먼저 커밋한다.
+    let changed = repo::changed_paths(&repository).map_err(|e| e.to_string())?;
+    if !changed.is_empty() {
+        repo::stage_all_and_commit(&repository, "local changes before sync", name, email)
+            .map_err(|e| e.to_string())?;
+    }
+
     match repo::pull(&repository, branch, name, email, token) {
         Ok(MergeOutcome::UpToDate) => Ok(SyncResult::UpToDate),
         Ok(MergeOutcome::Conflicts) => Ok(SyncResult::Conflicts(
@@ -189,6 +197,27 @@ mod tests {
         repo::clone_repo(&url, &a, None).unwrap();
         let res = pull_repo(&a, &branch, "A", "a@test", None).unwrap();
         assert_eq!(res, SyncResult::UpToDate);
+    }
+
+    #[test]
+    fn pull_preserves_uncommitted_local_changes() {
+        let (dir, url, branch) = seed_remote();
+        let b = dir.path().join("b");
+        repo::clone_repo(&url, &b, None).unwrap();
+        // B에 미커밋 로컬 변경
+        fs::write(b.join("local.md"), "local work").unwrap();
+
+        // A가 다른 파일로 원격을 진행
+        let a = dir.path().join("a");
+        repo::clone_repo(&url, &a, None).unwrap();
+        fs::write(a.join("from_a.md"), "a").unwrap();
+        commit_and_push(&a, &branch, "A", "a@test", None, "a").unwrap();
+
+        // B가 pull → 로컬 변경을 먼저 커밋 후 병합, 데이터 손실 없음
+        let res = pull_repo(&b, &branch, "B", "b@test", None).unwrap();
+        assert_eq!(res, SyncResult::Pulled);
+        assert_eq!(fs::read_to_string(b.join("local.md")).unwrap(), "local work");
+        assert!(b.join("from_a.md").exists());
     }
 
     #[test]
