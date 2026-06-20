@@ -1,67 +1,73 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect } from "react";
+import { useStore } from "./store";
+import { TreeView } from "./components/TreeView";
+import { Editor } from "./components/Editor";
+import { Preview } from "./components/Preview";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const {
+    tree,
+    selectedPath,
+    content,
+    dirty,
+    error,
+    init,
+    selectNote,
+    setContent,
+    save,
+  } = useStore();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  // Cmd/Ctrl+S 저장
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        save();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [save]);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+    <div className="app">
+      <aside className="sidebar">
+        <div className="sidebar-header">git_note</div>
+        <TreeView
+          nodes={tree}
+          selectedPath={selectedPath}
+          onSelect={selectNote}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+      </aside>
 
-      <button
-        onClick={async () => {
-          try {
-            const result = await invoke<string>("clone_repo", {
-              url: "https://github.com/octocat/Hello-World.git",
-              into: "/tmp/git_note_smoke",
-              token: null,
-            });
-            alert("cloned to " + result);
-          } catch (e) {
-            alert("error: " + e);
-          }
-        }}
-      >
-        clone 스모크 테스트
-      </button>
-    </main>
+      <section className="editor-pane">
+        <div className="pane-header">
+          <span>{selectedPath ?? "노트를 선택하세요"}</span>
+          {selectedPath && (
+            <button className="save-btn" onClick={save} disabled={!dirty}>
+              {dirty ? "저장 (⌘S)" : "저장됨"}
+            </button>
+          )}
+        </div>
+        {selectedPath ? (
+          <Editor value={content} onChange={setContent} />
+        ) : (
+          <div className="empty">왼쪽에서 노트를 선택하거나 새로 만드세요.</div>
+        )}
+      </section>
+
+      <section className="preview-pane">
+        <div className="pane-header">미리보기</div>
+        <Preview content={content} />
+      </section>
+
+      {error && <div className="error-toast">{error}</div>}
+    </div>
   );
 }
 
