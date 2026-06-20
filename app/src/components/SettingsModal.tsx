@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openUrl, openPath } from "@tauri-apps/plugin-opener";
 import {
   api,
   ownerRepoFromUrl,
@@ -35,6 +35,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
   const [updateMsg, setUpdateMsg] = useState("");
   const [updateInfo, setUpdateInfo] = useState<UpdateCheck | null>(null);
+  const [stats, setStats] = useState<{ notes: number; folders: number } | null>(null);
+
+  useEffect(() => {
+    api.vaultStats().then(setStats).catch(() => setStats(null));
+  }, []);
 
   const checkUpdate = async () => {
     setUpdateMsg("확인 중…");
@@ -237,6 +242,28 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <span className="dim">상태: {syncStatus}</span>
             <button onClick={() => syncNow()}>지금 동기화</button>
           </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>보관함</h3>
+          <p className="dim path-text">{config?.vault_path ?? "(미설정)"}</p>
+          <div className="row-between">
+            <span className="dim">
+              {stats ? `노트 ${stats.notes} · 폴더 ${stats.folders}` : "…"}
+            </span>
+            {config?.vault_path && (
+              <button onClick={() => openPath(config.vault_path!)}>폴더 열기</button>
+            )}
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>단축키</h3>
+          <ul className="shortcut-list">
+            <li><kbd>⌘/Ctrl + S</kbd> 저장 + 동기화</li>
+            <li><kbd>⌘/Ctrl + N</kbd> 새 노트</li>
+            <li><kbd>⌘/Ctrl + K</kbd> 빠른 열기</li>
+          </ul>
         </section>
 
         <section className="settings-section">

@@ -159,6 +159,13 @@ pub fn backlinks(state: State<AppState>, name: String) -> Result<Vec<String>, St
     vault::backlinks(&root, &name).map_err(|e| e.to_string())
 }
 
+/// 보관함 통계(노트/폴더 수).
+#[tauri::command]
+pub fn vault_stats(state: State<AppState>) -> Result<vault::Stats, String> {
+    let root = vault_root(&state)?;
+    vault::stats(&root).map_err(|e| e.to_string())
+}
+
 /// 제목/본문 전체 검색.
 #[tauri::command]
 pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {

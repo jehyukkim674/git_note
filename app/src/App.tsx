@@ -234,7 +234,18 @@ function App() {
           <Editor value={content} onChange={setContent} saveImage={saveImage} />
         )
       ) : (
-        <div className="empty">왼쪽에서 노트를 선택하거나 새로 만드세요.</div>
+        <div className="empty">
+          <p>왼쪽에서 노트를 선택하거나 ＋로 새 노트를 만드세요.</p>
+          {!config?.repo_url && (
+            <p className="onboarding">
+              지금은 로컬에만 저장됩니다. 기기 간 동기화를 켜려면{" "}
+              <button className="link" onClick={() => setSettingsOpen(true)}>
+                설정에서 GitHub 저장소 연결
+              </button>
+              .
+            </p>
+          )}
+        </div>
       )}
     </section>
   );
