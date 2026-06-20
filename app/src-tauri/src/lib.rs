@@ -46,6 +46,7 @@ pub fn run() {
             commands::rename_note,
             commands::export_html,
             commands::create_folder,
+            commands::backlinks,
             commands::search_notes,
             commands::save_asset,
             commands::set_github_client_id,

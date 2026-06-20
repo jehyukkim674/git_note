@@ -403,6 +403,43 @@ body {
   padding-bottom: 4px;
 }
 
+.connections {
+  border-top: 1px solid var(--border);
+  padding: 8px 12px;
+  background: var(--bg-alt);
+  font-size: 12px;
+}
+
+.conn-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 3px 0;
+  flex-wrap: wrap;
+}
+
+.conn-label {
+  color: var(--text-dim);
+  min-width: 44px;
+}
+
+.tag-chip,
+.backlink {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 2px 9px;
+  margin: 0 4px 4px 0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.backlink {
+  background: none;
+  text-decoration: underline;
+}
+
 .preview pre {
   background: var(--bg-alt);
   padding: 12px;
@@ -455,7 +492,7 @@ body {
   z-index: 90;
 }
 
-.conflict-banner button {
+.conflict-banner > button {
   background: #fff;
   color: #d97706;
   border: none;
@@ -463,6 +500,29 @@ body {
   padding: 4px 10px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.conflict-link {
+  background: none;
+  border: none;
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+}
+
+.conflict-inline {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="dark"] .conflict-inline {
+  background: #422006;
+  color: #fde68a;
 }
 
 .loading-overlay {

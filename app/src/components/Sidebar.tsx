@@ -64,6 +64,11 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
     return () => clearTimeout(t);
   }, [local, setSearchQuery]);
 
+  // 외부에서 검색어가 바뀌면(예: 태그 클릭) 입력창에도 반영
+  useEffect(() => {
+    setLocal((prev) => (prev === searchQuery ? prev : searchQuery));
+  }, [searchQuery]);
+
   const searching = searchQuery.trim() !== "";
   const sortedTree = useMemo(() => sortTree(tree, sortBy), [tree, sortBy]);
 
@@ -72,20 +77,36 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
       <div className="sidebar-header">
         <span>git_note</span>
         <span className="header-actions">
-          <button className="icon-btn" title="새 노트 (⌘N)" onClick={onNewNote}>
+          <button
+            className="icon-btn"
+            title="새 노트 (⌘N)"
+            aria-label="새 노트"
+            onClick={onNewNote}
+          >
             ＋
           </button>
-          <button className="icon-btn" title="새 폴더" onClick={onNewFolder}>
+          <button
+            className="icon-btn"
+            title="새 폴더"
+            aria-label="새 폴더"
+            onClick={onNewFolder}
+          >
             🗀
           </button>
           <button
             className="icon-btn"
             title={`정렬: ${sortBy === "name" ? "이름" : "수정시각"}`}
+            aria-label={`정렬 기준: ${sortBy === "name" ? "이름" : "수정시각"}`}
             onClick={() => setSortBy(sortBy === "name" ? "modified" : "name")}
           >
             {sortBy === "name" ? "A↓" : "🕘"}
           </button>
-          <button className="icon-btn" title="테마" onClick={toggleTheme}>
+          <button
+            className="icon-btn"
+            title="테마 전환"
+            aria-label="테마 전환"
+            onClick={toggleTheme}
+          >
             {theme === "dark" ? "☀" : "☾"}
           </button>
         </span>

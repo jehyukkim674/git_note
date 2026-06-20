@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./store";
 import { api } from "./lib/api";
 import { renderMarkdown, stripFrontmatter } from "./lib/markdown";
+import { hasConflictMarkers } from "./lib/text";
 import { useMediaQuery } from "./lib/useMediaQuery";
 import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
@@ -10,6 +11,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { QuickOpen } from "./components/QuickOpen";
 import { Dialog } from "./components/Dialog";
 import { Outline } from "./components/Outline";
+import { Connections } from "./components/Connections";
 import "./App.css";
 
 async function saveImage(file: File): Promise<string> {
@@ -30,7 +32,10 @@ function App() {
     conflicts,
     config,
     fontSize,
+    backlinks,
+    setSearchQuery,
     init,
+    selectNote,
     setContent,
     save,
     saveLocal,
@@ -55,6 +60,8 @@ function App() {
     const words = text ? text.split(/\s+/).length : 0;
     return { words, mins: Math.max(1, Math.ceil(words / 200)) };
   }, [content]);
+
+  const conflicted = useMemo(() => hasConflictMarkers(content), [content]);
 
   const onExport = async () => {
     if (!selectedPath) return;
@@ -123,7 +130,20 @@ function App() {
       {loading && <div className="loading-overlay">불러오는 중…</div>}
       {syncStatus === "conflict" && conflicts.length > 0 && (
         <div className="conflict-banner">
-          <span>충돌: {conflicts.join(", ")} — 파일에서 충돌 표시를 정리한 뒤 다시 동기화하세요.</span>
+          <span>
+            충돌:{" "}
+            {conflicts.map((p, i) => (
+              <button
+                key={p}
+                className="conflict-link"
+                onClick={() => selectNote(p)}
+              >
+                {p}
+                {i < conflicts.length - 1 ? ", " : ""}
+              </button>
+            ))}
+            {" "}— 정리 후 다시 동기화하세요.
+          </span>
           <button onClick={() => syncNow()}>다시 동기화</button>
         </div>
       )}
@@ -201,6 +221,12 @@ function App() {
           )}
         </span>
       </div>
+      {selectedPath && conflicted && (
+        <div className="conflict-inline" role="alert">
+          ⚠ 이 노트에 병합 충돌 마커가 있습니다. {"<<<<<<<"} / {"======="} /{" "}
+          {">>>>>>>"} 구간을 정리한 뒤 저장(⌘S)하면 해결됩니다.
+        </div>
+      )}
       {selectedPath ? (
         isMobile && mobilePreview ? (
           <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
@@ -251,6 +277,14 @@ function App() {
         </div>
         {showOutline && <Outline content={content} />}
         <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
+        {selectedPath && (
+          <Connections
+            content={content}
+            backlinks={backlinks}
+            onTag={(t) => setSearchQuery(`#${t}`)}
+            onOpen={selectNote}
+          />
+        )}
       </section>
 
       {overlays}
