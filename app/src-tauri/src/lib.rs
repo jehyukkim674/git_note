@@ -43,6 +43,7 @@ pub fn run() {
             commands::read_note,
             commands::write_note,
             commands::delete_note,
+            commands::rename_note,
             commands::search_notes,
             commands::save_asset,
             commands::set_github_client_id,

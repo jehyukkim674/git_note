@@ -20,10 +20,16 @@ function App() {
     dirty,
     error,
     vaultPath,
+    loading,
+    theme,
+    syncStatus,
+    conflicts,
     init,
     setContent,
     save,
     clearSelection,
+    clearError,
+    syncNow,
   } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
@@ -32,6 +38,11 @@ function App() {
   useEffect(() => {
     init();
   }, [init]);
+
+  // 테마 적용
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -43,6 +54,34 @@ function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [save]);
+
+  // 자동 저장(편집 후 1.5초)
+  useEffect(() => {
+    if (!dirty || !selectedPath) return;
+    const t = setTimeout(() => save(), 1500);
+    return () => clearTimeout(t);
+  }, [dirty, content, selectedPath, save]);
+
+  const overlays = (
+    <>
+      {loading && <div className="loading-overlay">불러오는 중…</div>}
+      {syncStatus === "conflict" && conflicts.length > 0 && (
+        <div className="conflict-banner">
+          <span>충돌: {conflicts.join(", ")} — 파일에서 충돌 표시를 정리한 뒤 다시 동기화하세요.</span>
+          <button onClick={() => syncNow()}>다시 동기화</button>
+        </div>
+      )}
+      {error && (
+        <div className="error-toast">
+          <span>{error}</span>
+          <button className="toast-close" onClick={clearError}>
+            ✕
+          </button>
+        </div>
+      )}
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+    </>
+  );
 
   const editorPane = (
     <section className="editor-pane">
@@ -89,8 +128,7 @@ function App() {
         ) : (
           <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
         )}
-        {error && <div className="error-toast">{error}</div>}
-        {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+        {overlays}
       </div>
     );
   }
@@ -104,8 +142,7 @@ function App() {
         <Preview content={content} vaultPath={vaultPath} />
       </section>
 
-      {error && <div className="error-toast">{error}</div>}
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {overlays}
     </div>
   );
 }

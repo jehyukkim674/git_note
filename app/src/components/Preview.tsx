@@ -1,9 +1,25 @@
 import { useMemo } from "react";
 import MarkdownIt from "markdown-it";
 import DOMPurify from "dompurify";
+import hljs from "highlight.js/lib/common";
+import "highlight.js/styles/github.css";
 import { convertFileSrc } from "@tauri-apps/api/core";
 
-const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+  highlight: (str, lang) => {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(str, { language: lang }).value;
+      } catch {
+        /* fall through */
+      }
+    }
+    return "";
+  },
+});
 
 // 상대경로 이미지(assets/…)를 webview가 읽을 수 있는 asset URL로 변환.
 const defaultImageRender =

@@ -47,6 +47,7 @@ interface AppStore {
   config: AppConfig | null;
   syncStatus: SyncStatus;
   conflicts: string[];
+  theme: "light" | "dark";
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
@@ -59,6 +60,30 @@ interface AppStore {
   logout: () => Promise<void>;
   connectRepo: (repoUrl: string, branch: string) => Promise<void>;
   syncNow: () => Promise<void>;
+  pushChanges: (message: string) => Promise<void>;
+  createNote: (path: string) => Promise<void>;
+  renameNote: (from: string, to: string) => Promise<void>;
+  deleteNote: (path: string) => Promise<void>;
+  clearError: () => void;
+  toggleTheme: () => void;
+}
+
+function initialTheme(): "light" | "dark" {
+  if (typeof localStorage !== "undefined") {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark" || saved === "light") return saved;
+  }
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return "light";
+}
+
+/// .md 확장자를 보장한다.
+function ensureMd(path: string): string {
+  return path.endsWith(".md") ? path : `${path}.md`;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -76,6 +101,7 @@ export const useStore = create<AppStore>((set, get) => ({
   config: null,
   syncStatus: "idle",
   conflicts: [],
+  theme: initialTheme(),
 
   init: async () => {
     set({ loading: true, error: null });
@@ -117,20 +143,73 @@ export const useStore = create<AppStore>((set, get) => ({
   clearSelection: () => set({ selectedPath: null, content: "", dirty: false }),
 
   save: async () => {
-    const { selectedPath, content, config } = get();
+    const { selectedPath, content } = get();
     if (!selectedPath) return;
     try {
       await api.writeNote(selectedPath, content);
       set({ dirty: false, error: null });
       await get().loadTree();
-      if (config?.repo_url) {
-        set({ syncStatus: "syncing" });
-        const res = await api.syncPush(`update ${selectedPath}`);
-        set(statusFromResult(res));
-      }
+      await get().pushChanges(`update ${selectedPath}`);
     } catch (e) {
       set({ error: String(e), syncStatus: "error" });
     }
+  },
+
+  pushChanges: async (message: string) => {
+    const { config } = get();
+    if (!config?.repo_url) return;
+    set({ syncStatus: "syncing" });
+    try {
+      const res = await api.syncPush(message);
+      set(statusFromResult(res));
+    } catch (e) {
+      set({ error: String(e), syncStatus: "error" });
+    }
+  },
+
+  createNote: async (path: string) => {
+    const rel = ensureMd(path);
+    try {
+      await api.writeNote(rel, `# ${rel.replace(/\.md$/, "").split("/").pop()}\n\n`);
+      await get().loadTree();
+      await get().selectNote(rel);
+      await get().pushChanges(`create ${rel}`);
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  renameNote: async (from: string, to: string) => {
+    const dst = ensureMd(to);
+    try {
+      await api.renameNote(from, dst);
+      await get().loadTree();
+      if (get().selectedPath === from) {
+        await get().selectNote(dst);
+      }
+      await get().pushChanges(`rename ${from} -> ${dst}`);
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  deleteNote: async (path: string) => {
+    try {
+      await api.deleteNote(path);
+      if (get().selectedPath === path) get().clearSelection();
+      await get().loadTree();
+      await get().pushChanges(`delete ${path}`);
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  clearError: () => set({ error: null }),
+
+  toggleTheme: () => {
+    const theme = get().theme === "dark" ? "light" : "dark";
+    if (typeof localStorage !== "undefined") localStorage.setItem("theme", theme);
+    set({ theme });
   },
 
   setSearchQuery: async (query: string) => {

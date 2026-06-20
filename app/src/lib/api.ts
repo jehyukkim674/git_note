@@ -75,6 +75,8 @@ export const api = {
   writeNote: (rel: string, content: string) =>
     invoke<void>("write_note", { rel, content }),
   deleteNote: (rel: string) => invoke<void>("delete_note", { rel }),
+  renameNote: (from: string, to: string) =>
+    invoke<void>("rename_note", { from, to }),
   searchNotes: (query: string) => invoke<SearchHit[]>("search_notes", { query }),
   saveAsset: (filename: string, bytes: number[]) =>
     invoke<string>("save_asset", { filename, bytes }),

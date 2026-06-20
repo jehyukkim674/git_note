@@ -5,10 +5,17 @@ interface Props {
   nodes: TreeNode[];
   selectedPath: string | null;
   onSelect: (path: string) => void;
+  onRename?: (path: string) => void;
+  onDelete?: (path: string) => void;
   depth?: number;
 }
 
-function DirNode({ node, selectedPath, onSelect, depth }: { node: TreeNode } & Props) {
+function DirNode({
+  node,
+  depth,
+  nodes: _ignored,
+  ...rest
+}: { node: TreeNode } & Props) {
   const [open, setOpen] = useState(true);
   return (
     <li>
@@ -20,19 +27,19 @@ function DirNode({ node, selectedPath, onSelect, depth }: { node: TreeNode } & P
         <span className="tree-caret">{open ? "▾" : "▸"}</span>
         {node.name}
       </button>
-      {open && (
-        <TreeView
-          nodes={node.children}
-          selectedPath={selectedPath}
-          onSelect={onSelect}
-          depth={depth! + 1}
-        />
-      )}
+      {open && <TreeView nodes={node.children} depth={depth! + 1} {...rest} />}
     </li>
   );
 }
 
-export function TreeView({ nodes, selectedPath, onSelect, depth = 0 }: Props) {
+export function TreeView({
+  nodes,
+  selectedPath,
+  onSelect,
+  onRename,
+  onDelete,
+  depth = 0,
+}: Props) {
   return (
     <ul className="tree-list">
       {nodes.map((node) =>
@@ -43,10 +50,12 @@ export function TreeView({ nodes, selectedPath, onSelect, depth = 0 }: Props) {
             nodes={[]}
             selectedPath={selectedPath}
             onSelect={onSelect}
+            onRename={onRename}
+            onDelete={onDelete}
             depth={depth}
           />
         ) : (
-          <li key={node.path}>
+          <li key={node.path} className="tree-file-row">
             <button
               className={
                 "tree-row tree-file" +
@@ -57,6 +66,26 @@ export function TreeView({ nodes, selectedPath, onSelect, depth = 0 }: Props) {
             >
               {node.name.replace(/\.md$/, "")}
             </button>
+            <span className="tree-actions">
+              {onRename && (
+                <button
+                  className="tree-action"
+                  title="이름변경"
+                  onClick={() => onRename(node.path)}
+                >
+                  ✎
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  className="tree-action"
+                  title="삭제"
+                  onClick={() => onDelete(node.path)}
+                >
+                  🗑
+                </button>
+              )}
+            </span>
           </li>
         )
       )}

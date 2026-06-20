@@ -104,6 +104,17 @@ pub fn delete_note(root: &Path, rel: &str) -> Result<(), GitError> {
     Ok(())
 }
 
+/// 노트를 이동/이름변경한다(대상 상위 디렉토리 자동 생성).
+pub fn rename_note(root: &Path, from: &str, to: &str) -> Result<(), GitError> {
+    let src = safe_join(root, from)?;
+    let dst = safe_join(root, to)?;
+    if let Some(parent) = dst.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::rename(src, dst)?;
+    Ok(())
+}
+
 /// 파일명에서 경로/위험 문자를 제거한다.
 fn sanitize_filename(name: &str) -> String {
     let base = Path::new(name)
@@ -277,6 +288,22 @@ mod tests {
         write_note(dir.path(), "gone.md", "x").unwrap();
         delete_note(dir.path(), "gone.md").unwrap();
         assert!(!dir.path().join("gone.md").exists());
+    }
+
+    #[test]
+    fn rename_moves_file_and_creates_dirs() {
+        let dir = temp_root();
+        write_note(dir.path(), "old.md", "body").unwrap();
+        rename_note(dir.path(), "old.md", "sub/new.md").unwrap();
+        assert!(!dir.path().join("old.md").exists());
+        assert_eq!(read_note(dir.path(), "sub/new.md").unwrap(), "body");
+    }
+
+    #[test]
+    fn rename_rejects_traversal() {
+        let dir = temp_root();
+        write_note(dir.path(), "a.md", "x").unwrap();
+        assert!(rename_note(dir.path(), "a.md", "../escape.md").is_err());
     }
 
     #[test]

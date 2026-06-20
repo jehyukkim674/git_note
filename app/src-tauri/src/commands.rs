@@ -131,6 +131,13 @@ pub fn delete_note(state: State<AppState>, rel: String) -> Result<(), String> {
     vault::delete_note(&root, &rel).map_err(|e| e.to_string())
 }
 
+/// 노트를 이동/이름변경한다.
+#[tauri::command]
+pub fn rename_note(state: State<AppState>, from: String, to: String) -> Result<(), String> {
+    let root = vault_root(&state)?;
+    vault::rename_note(&root, &from, &to).map_err(|e| e.to_string())
+}
+
 /// 제목/본문 전체 검색.
 #[tauri::command]
 pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {
