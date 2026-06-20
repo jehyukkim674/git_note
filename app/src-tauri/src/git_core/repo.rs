@@ -1,5 +1,5 @@
 use std::path::Path;
-use git2::{Commit, Cred, FetchOptions, Oid, RemoteCallbacks, Repository, Signature};
+use git2::{Commit, Cred, FetchOptions, Oid, PushOptions, RemoteCallbacks, Repository, Signature};
 use git2::build::RepoBuilder;
 use crate::git_core::error::GitError;
 
@@ -49,6 +49,16 @@ pub fn stage_all_and_commit(
     let parents: Vec<&Commit> = parent.iter().collect();
     let oid = repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)?;
     Ok(oid)
+}
+
+/// origin의 같은 이름 브랜치로 push 한다.
+pub fn push(repo: &Repository, branch: &str, token: Option<String>) -> Result<(), GitError> {
+    let mut remote = repo.find_remote("origin")?;
+    let mut po = PushOptions::new();
+    po.remote_callbacks(make_callbacks(token));
+    let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
+    remote.push(&[refspec.as_str()], Some(&mut po))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -104,5 +114,23 @@ mod tests {
         let head = repo.head().unwrap().peel_to_commit().unwrap();
         assert_eq!(head.id(), oid);
         assert_eq!(head.message().unwrap(), "add note");
+    }
+
+    #[test]
+    fn push_updates_remote() {
+        let (dir, url) = make_seed_remote();
+
+        // 첫 번째 clone에서 커밋 후 push
+        let a = dir.path().join("a");
+        let repo_a = clone_repo(&url, &a, None).unwrap();
+        fs::write(a.join("pushed.md"), "# pushed").unwrap();
+        stage_all_and_commit(&repo_a, "add pushed", "A", "a@test").unwrap();
+        let branch = repo_a.head().unwrap().shorthand().unwrap().to_string();
+        push(&repo_a, &branch, None).unwrap();
+
+        // 두 번째 clone에 push 결과가 반영됐는지 확인
+        let b = dir.path().join("b");
+        clone_repo(&url, &b, None).unwrap();
+        assert!(b.join("pushed.md").exists());
     }
 }
