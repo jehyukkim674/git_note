@@ -1,5 +1,5 @@
 use std::path::Path;
-use git2::{Cred, FetchOptions, RemoteCallbacks, Repository};
+use git2::{Commit, Cred, FetchOptions, Oid, RemoteCallbacks, Repository, Signature};
 use git2::build::RepoBuilder;
 use crate::git_core::error::GitError;
 
@@ -23,6 +23,32 @@ pub fn clone_repo(url: &str, into: &Path, token: Option<String>) -> Result<Repos
     builder.fetch_options(fo);
     let repo = builder.clone(url, into)?;
     Ok(repo)
+}
+
+/// 기존 저장소를 연다.
+pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
+    Ok(Repository::open(path)?)
+}
+
+/// 작업트리의 모든 변경을 스테이징하고 커밋한다. 커밋 Oid를 돌려준다.
+pub fn stage_all_and_commit(
+    repo: &Repository,
+    message: &str,
+    name: &str,
+    email: &str,
+) -> Result<Oid, GitError> {
+    let mut index = repo.index()?;
+    index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)?;
+    index.write()?;
+    let tree = repo.find_tree(index.write_tree()?)?;
+    let sig = Signature::now(name, email)?;
+    let parent: Option<Commit> = match repo.head() {
+        Ok(head) => Some(head.peel_to_commit()?),
+        Err(_) => None,
+    };
+    let parents: Vec<&Commit> = parent.iter().collect();
+    let oid = repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)?;
+    Ok(oid)
 }
 
 #[cfg(test)]
@@ -64,5 +90,19 @@ mod tests {
         let dest = dir.path().join("clone");
         let _repo = clone_repo(&url, &dest, None).unwrap();
         assert!(dest.join("hello.md").exists());
+    }
+
+    #[test]
+    fn commit_creates_new_head() {
+        let (dir, url) = make_seed_remote();
+        let dest = dir.path().join("clone");
+        let repo = clone_repo(&url, &dest, None).unwrap();
+
+        fs::write(dest.join("note.md"), "# note").unwrap();
+        let oid = stage_all_and_commit(&repo, "add note", "Tester", "t@test").unwrap();
+
+        let head = repo.head().unwrap().peel_to_commit().unwrap();
+        assert_eq!(head.id(), oid);
+        assert_eq!(head.message().unwrap(), "add note");
     }
 }
