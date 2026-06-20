@@ -10,7 +10,17 @@ pub struct TreeNode {
     /// root 기준 상대경로(항상 `/` 구분자).
     pub path: String,
     pub is_dir: bool,
+    /// 마지막 수정 시각(UNIX epoch 초). 알 수 없으면 0.
+    pub modified: u64,
     pub children: Vec<TreeNode>,
+}
+
+fn mtime_secs(meta: &fs::Metadata) -> u64 {
+    meta.modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 fn is_hidden(name: &str) -> bool {
@@ -56,12 +66,14 @@ fn build_children(root: &Path, dir: &Path) -> Result<Vec<TreeNode>, GitError> {
             .to_string_lossy()
             .replace('\\', "/");
         let ft = entry.file_type()?;
+        let modified = entry.metadata().map(|m| mtime_secs(&m)).unwrap_or(0);
         if ft.is_dir() {
             let children = build_children(root, &path)?;
             entries.push(TreeNode {
                 name,
                 path: rel,
                 is_dir: true,
+                modified,
                 children,
             });
         } else if name.ends_with(".md") {
@@ -69,6 +81,7 @@ fn build_children(root: &Path, dir: &Path) -> Result<Vec<TreeNode>, GitError> {
                 name,
                 path: rel,
                 is_dir: false,
+                modified,
                 children: vec![],
             });
         }
@@ -102,6 +115,34 @@ pub fn delete_note(root: &Path, rel: &str) -> Result<(), GitError> {
     let full = safe_join(root, rel)?;
     fs::remove_file(full)?;
     Ok(())
+}
+
+/// 렌더된 HTML 본문을 같은 위치의 `.html` 파일로 내보낸다. 내보낸 상대경로를 돌려준다.
+pub fn export_html(root: &Path, rel: &str, body_html: &str) -> Result<String, GitError> {
+    let src = safe_join(root, rel)?;
+    if !src.exists() {
+        return Err(invalid_path());
+    }
+    let html_rel = if let Some(stem) = rel.strip_suffix(".md") {
+        format!("{stem}.html")
+    } else {
+        format!("{rel}.html")
+    };
+    let dst = safe_join(root, &html_rel)?;
+    let title = Path::new(rel)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let doc = format!(
+        "<!doctype html>\n<html lang=\"ko\"><head><meta charset=\"utf-8\">\
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
+<title>{title}</title></head>\n<body>\n{body_html}\n</body></html>\n"
+    );
+    if let Some(parent) = dst.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(&dst, doc)?;
+    Ok(html_rel)
 }
 
 /// 노트를 이동/이름변경한다(대상 상위 디렉토리 자동 생성).
@@ -304,6 +345,31 @@ mod tests {
         let dir = temp_root();
         write_note(dir.path(), "a.md", "x").unwrap();
         assert!(rename_note(dir.path(), "a.md", "../escape.md").is_err());
+    }
+
+    #[test]
+    fn export_html_writes_sibling_file() {
+        let dir = temp_root();
+        write_note(dir.path(), "doc.md", "# t").unwrap();
+        let out = export_html(dir.path(), "doc.md", "<h1>t</h1>").unwrap();
+        assert_eq!(out, "doc.html");
+        let html = read_note(dir.path(), "doc.html").unwrap();
+        assert!(html.contains("<h1>t</h1>"));
+        assert!(html.contains("<title>doc</title>"));
+    }
+
+    #[test]
+    fn export_html_errors_when_source_missing() {
+        let dir = temp_root();
+        assert!(export_html(dir.path(), "nope.md", "<p>x</p>").is_err());
+    }
+
+    #[test]
+    fn list_tree_includes_modified_time() {
+        let dir = temp_root();
+        write_note(dir.path(), "a.md", "x").unwrap();
+        let tree = list_tree(dir.path()).unwrap();
+        assert!(tree[0].modified > 0);
     }
 
     #[test]

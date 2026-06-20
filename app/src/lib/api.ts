@@ -4,6 +4,7 @@ export interface TreeNode {
   name: string;
   path: string;
   is_dir: boolean;
+  modified: number;
   children: TreeNode[];
 }
 
@@ -77,6 +78,8 @@ export const api = {
   deleteNote: (rel: string) => invoke<void>("delete_note", { rel }),
   renameNote: (from: string, to: string) =>
     invoke<void>("rename_note", { from, to }),
+  exportHtml: (rel: string, html: string) =>
+    invoke<string>("export_html", { rel, html }),
   searchNotes: (query: string) => invoke<SearchHit[]>("search_notes", { query }),
   saveAsset: (filename: string, bytes: number[]) =>
     invoke<string>("save_asset", { filename, bytes }),

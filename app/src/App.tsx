@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./store";
 import { api } from "./lib/api";
+import { renderMarkdown, stripFrontmatter } from "./lib/markdown";
 import { useMediaQuery } from "./lib/useMediaQuery";
 import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
@@ -24,16 +25,39 @@ function App() {
     theme,
     syncStatus,
     conflicts,
+    config,
     init,
     setContent,
     save,
+    saveLocal,
+    pushChanges,
     clearSelection,
     clearError,
     syncNow,
+    openByName,
   } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
+  const [exportMsg, setExportMsg] = useState("");
   const isMobile = useMediaQuery("(max-width: 720px)");
+
+  const wordInfo = useMemo(() => {
+    const text = stripFrontmatter(content).trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    return { words, mins: Math.max(1, Math.ceil(words / 200)) };
+  }, [content]);
+
+  const onExport = async () => {
+    if (!selectedPath) return;
+    try {
+      const html = renderMarkdown(content, vaultPath);
+      const out = await api.exportHtml(selectedPath, html);
+      setExportMsg(`내보냄: ${out}`);
+      setTimeout(() => setExportMsg(""), 2500);
+    } catch (e) {
+      setExportMsg(String(e));
+    }
+  };
 
   useEffect(() => {
     init();
@@ -55,12 +79,19 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [save]);
 
-  // 자동 저장(편집 후 1.5초)
+  // 자동 저장: 편집 후 1.5초 로컬 저장(push 안 함)
   useEffect(() => {
     if (!dirty || !selectedPath) return;
-    const t = setTimeout(() => save(), 1500);
+    const t = setTimeout(() => saveLocal(), 1500);
     return () => clearTimeout(t);
-  }, [dirty, content, selectedPath, save]);
+  }, [dirty, content, selectedPath, saveLocal]);
+
+  // 자동 동기화: 마지막 편집 후 10초에 한 번 push(커밋 폭주 방지)
+  useEffect(() => {
+    if (!selectedPath || !config?.repo_url) return;
+    const t = setTimeout(() => pushChanges("auto sync"), 10000);
+    return () => clearTimeout(t);
+  }, [content, selectedPath, config?.repo_url, pushChanges]);
 
   const overlays = (
     <>
@@ -93,6 +124,16 @@ function App() {
         )}
         <span>{selectedPath ?? "노트를 선택하세요"}</span>
         <span className="header-right">
+          {selectedPath && !isMobile && (
+            <span className="word-count" title="단어 수 · 예상 읽기시간">
+              {exportMsg || `${wordInfo.words}단어 · ${wordInfo.mins}분`}
+            </span>
+          )}
+          {selectedPath && (
+            <button className="save-btn" onClick={onExport} title="HTML 내보내기">
+              HTML
+            </button>
+          )}
           {isMobile && selectedPath && (
             <button
               className="save-btn"
@@ -110,7 +151,7 @@ function App() {
       </div>
       {selectedPath ? (
         isMobile && mobilePreview ? (
-          <Preview content={content} vaultPath={vaultPath} />
+          <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
         ) : (
           <Editor value={content} onChange={setContent} saveImage={saveImage} />
         )
@@ -139,7 +180,7 @@ function App() {
       {editorPane}
       <section className="preview-pane">
         <div className="pane-header">미리보기</div>
-        <Preview content={content} vaultPath={vaultPath} />
+        <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
       </section>
 
       {overlays}

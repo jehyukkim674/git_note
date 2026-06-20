@@ -34,6 +34,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
     createNote,
     renameNote,
     deleteNote,
+    recent,
   } = useStore();
   const [local, setLocal] = useState("");
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -83,13 +84,33 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
       ) : tree.length === 0 ? (
         <div className="tree-empty">노트가 없습니다. ＋로 새 노트를 만드세요.</div>
       ) : (
-        <TreeView
-          nodes={tree}
-          selectedPath={selectedPath}
-          onSelect={selectNote}
-          onRename={(path) => setDialog({ kind: "rename", path })}
-          onDelete={(path) => setDialog({ kind: "delete", path })}
-        />
+        <>
+          {recent.length > 0 && (
+            <div className="recent">
+              <div className="recent-title">최근</div>
+              {recent.slice(0, 5).map((path) => (
+                <button
+                  key={path}
+                  className={
+                    "tree-row tree-file recent-item" +
+                    (path === selectedPath ? " selected" : "")
+                  }
+                  onClick={() => selectNote(path)}
+                  title={path}
+                >
+                  {path.split("/").pop()?.replace(/\.md$/, "")}
+                </button>
+              ))}
+            </div>
+          )}
+          <TreeView
+            nodes={tree}
+            selectedPath={selectedPath}
+            onSelect={selectNote}
+            onRename={(path) => setDialog({ kind: "rename", path })}
+            onDelete={(path) => setDialog({ kind: "delete", path })}
+          />
+        </>
       )}
 
       <button className="sidebar-footer" onClick={onOpenSettings}>

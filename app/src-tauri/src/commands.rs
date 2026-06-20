@@ -138,6 +138,13 @@ pub fn rename_note(state: State<AppState>, from: String, to: String) -> Result<(
     vault::rename_note(&root, &from, &to).map_err(|e| e.to_string())
 }
 
+/// 렌더된 HTML을 .html 파일로 내보낸다.
+#[tauri::command]
+pub fn export_html(state: State<AppState>, rel: String, html: String) -> Result<String, String> {
+    let root = vault_root(&state)?;
+    vault::export_html(&root, &rel, &html).map_err(|e| e.to_string())
+}
+
 /// 제목/본문 전체 검색.
 #[tauri::command]
 pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::SearchHit>, String> {

@@ -48,12 +48,15 @@ interface AppStore {
   syncStatus: SyncStatus;
   conflicts: string[];
   theme: "light" | "dark";
+  recent: string[];
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
   selectNote: (path: string) => Promise<void>;
+  openByName: (name: string) => Promise<void>;
   setContent: (content: string) => void;
   clearSelection: () => void;
+  saveLocal: () => Promise<void>;
   save: () => Promise<void>;
   setSearchQuery: (query: string) => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -86,6 +89,23 @@ function ensureMd(path: string): string {
   return path.endsWith(".md") ? path : `${path}.md`;
 }
 
+function flattenFiles(nodes: TreeNode[]): string[] {
+  const out: string[] = [];
+  for (const n of nodes) {
+    if (n.is_dir) out.push(...flattenFiles(n.children));
+    else out.push(n.path);
+  }
+  return out;
+}
+
+function loadRecent(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem("recent") || "[]");
+  } catch {
+    return [];
+  }
+}
+
 export const useStore = create<AppStore>((set, get) => ({
   tree: [],
   selectedPath: null,
@@ -102,6 +122,7 @@ export const useStore = create<AppStore>((set, get) => ({
   syncStatus: "idle",
   conflicts: [],
   theme: initialTheme(),
+  recent: loadRecent(),
 
   init: async () => {
     set({ loading: true, error: null });
@@ -132,27 +153,53 @@ export const useStore = create<AppStore>((set, get) => ({
   selectNote: async (path: string) => {
     try {
       const content = await api.readNote(path);
-      set({ selectedPath: path, content, dirty: false, error: null });
+      const recent = [path, ...get().recent.filter((p) => p !== path)].slice(0, 8);
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("recent", JSON.stringify(recent));
+      }
+      set({ selectedPath: path, content, dirty: false, error: null, recent });
     } catch (e) {
       set({ error: String(e) });
     }
+  },
+
+  openByName: async (name: string) => {
+    const target = ensureMd(name);
+    const files = flattenFiles(get().tree);
+    const hit = files.find(
+      (p) =>
+        p === target ||
+        p === name ||
+        p.split("/").pop() === target ||
+        p.split("/").pop()?.replace(/\.md$/, "") === name
+    );
+    if (hit) await get().selectNote(hit);
+    else set({ error: `노트를 찾을 수 없음: ${name}` });
   },
 
   setContent: (content: string) => set({ content, dirty: true }),
 
   clearSelection: () => set({ selectedPath: null, content: "", dirty: false }),
 
-  save: async () => {
-    const { selectedPath, content } = get();
-    if (!selectedPath) return;
+  // 로컬에만 저장(잦은 자동저장용). push는 하지 않는다.
+  saveLocal: async () => {
+    const { selectedPath, content, dirty } = get();
+    if (!selectedPath || !dirty) return;
     try {
       await api.writeNote(selectedPath, content);
       set({ dirty: false, error: null });
       await get().loadTree();
-      await get().pushChanges(`update ${selectedPath}`);
     } catch (e) {
-      set({ error: String(e), syncStatus: "error" });
+      set({ error: String(e) });
     }
+  },
+
+  // 명시적 저장: 로컬 저장 후 즉시 push.
+  save: async () => {
+    const { selectedPath } = get();
+    if (!selectedPath) return;
+    await get().saveLocal();
+    await get().pushChanges(`update ${selectedPath}`);
   },
 
   pushChanges: async (message: string) => {
