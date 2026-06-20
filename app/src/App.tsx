@@ -44,6 +44,23 @@ function App() {
         <button type="submit">Greet</button>
       </form>
       <p>{greetMsg}</p>
+
+      <button
+        onClick={async () => {
+          try {
+            const result = await invoke<string>("clone_repo", {
+              url: "https://github.com/octocat/Hello-World.git",
+              into: "/tmp/git_note_smoke",
+              token: null,
+            });
+            alert("cloned to " + result);
+          } catch (e) {
+            alert("error: " + e);
+          }
+        }}
+      >
+        clone 스모크 테스트
+      </button>
     </main>
   );
 }
