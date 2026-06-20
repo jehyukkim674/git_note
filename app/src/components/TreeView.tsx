@@ -8,6 +8,7 @@ interface Props {
   onRename?: (path: string) => void;
   onDelete?: (path: string) => void;
   onPin?: (path: string) => void;
+  onNewInFolder?: (dir: string) => void;
   pinned?: string[];
   depth?: number;
 }
@@ -21,14 +22,28 @@ function DirNode({
   const [open, setOpen] = useState(true);
   return (
     <li>
-      <button
-        className="tree-row tree-dir"
-        style={{ paddingLeft: depth! * 12 + 8 }}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="tree-caret">{open ? "▾" : "▸"}</span>
-        {node.name}
-      </button>
+      <div className="tree-file-row">
+        <button
+          className="tree-row tree-dir"
+          style={{ paddingLeft: depth! * 12 + 8 }}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className="tree-caret">{open ? "▾" : "▸"}</span>
+          {node.name}
+        </button>
+        {rest.onNewInFolder && (
+          <span className="tree-actions">
+            <button
+              className="tree-action"
+              title="이 폴더에 새 노트"
+              aria-label="이 폴더에 새 노트"
+              onClick={() => rest.onNewInFolder!(node.path)}
+            >
+              ＋
+            </button>
+          </span>
+        )}
+      </div>
       {open && <TreeView nodes={node.children} depth={depth! + 1} {...rest} />}
     </li>
   );
@@ -41,6 +56,7 @@ export function TreeView({
   onRename,
   onDelete,
   onPin,
+  onNewInFolder,
   pinned,
   depth = 0,
 }: Props) {
@@ -57,6 +73,7 @@ export function TreeView({
             onRename={onRename}
             onDelete={onDelete}
             onPin={onPin}
+            onNewInFolder={onNewInFolder}
             pinned={pinned}
             depth={depth}
           />

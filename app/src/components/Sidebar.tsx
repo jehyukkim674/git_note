@@ -35,9 +35,15 @@ interface Props {
   onOpenSettings: () => void;
   onNewNote: () => void;
   onNewFolder: () => void;
+  onNewInFolder: (dir: string) => void;
 }
 
-export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
+export function Sidebar({
+  onOpenSettings,
+  onNewNote,
+  onNewFolder,
+  onNewInFolder,
+}: Props) {
   const {
     tree,
     selectedPath,
@@ -190,6 +196,7 @@ export function Sidebar({ onOpenSettings, onNewNote, onNewFolder }: Props) {
             onRename={(path) => setDialog({ kind: "rename", path })}
             onDelete={(path) => setDialog({ kind: "delete", path })}
             onPin={togglePin}
+            onNewInFolder={onNewInFolder}
             pinned={pinned}
           />
         </>
