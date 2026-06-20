@@ -6,6 +6,7 @@ interface Props {
   selectedPath: string | null;
   onSelect: (path: string) => void;
   onRename?: (path: string) => void;
+  onDuplicate?: (path: string) => void;
   onDelete?: (path: string) => void;
   onPin?: (path: string) => void;
   onNewInFolder?: (dir: string) => void;
@@ -54,6 +55,7 @@ export function TreeView({
   selectedPath,
   onSelect,
   onRename,
+  onDuplicate,
   onDelete,
   onPin,
   onNewInFolder,
@@ -71,6 +73,7 @@ export function TreeView({
             selectedPath={selectedPath}
             onSelect={onSelect}
             onRename={onRename}
+            onDuplicate={onDuplicate}
             onDelete={onDelete}
             onPin={onPin}
             onNewInFolder={onNewInFolder}
@@ -106,6 +109,15 @@ export function TreeView({
                   onClick={() => onRename(node.path)}
                 >
                   ✎
+                </button>
+              )}
+              {onDuplicate && (
+                <button
+                  className="tree-action"
+                  title="복제"
+                  onClick={() => onDuplicate(node.path)}
+                >
+                  ⧉
                 </button>
               )}
               {onDelete && (

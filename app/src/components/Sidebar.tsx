@@ -56,6 +56,7 @@ export function Sidebar({
     theme,
     toggleTheme,
     renameNote,
+    duplicateNote,
     deleteNote,
     recent,
     pinned,
@@ -194,6 +195,7 @@ export function Sidebar({
             selectedPath={selectedPath}
             onSelect={selectNote}
             onRename={(path) => setDialog({ kind: "rename", path })}
+            onDuplicate={duplicateNote}
             onDelete={(path) => setDialog({ kind: "delete", path })}
             onPin={togglePin}
             onNewInFolder={onNewInFolder}

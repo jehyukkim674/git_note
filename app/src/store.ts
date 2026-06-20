@@ -72,6 +72,7 @@ interface AppStore {
   createNote: (path: string) => Promise<void>;
   createFolder: (path: string) => Promise<void>;
   renameNote: (from: string, to: string) => Promise<void>;
+  duplicateNote: (path: string) => Promise<void>;
   deleteNote: (path: string) => Promise<void>;
   clearError: () => void;
   toggleTheme: () => void;
@@ -252,6 +253,26 @@ export const useStore = create<AppStore>((set, get) => ({
         await get().selectNote(dst);
       }
       await get().pushChanges(`rename ${from} -> ${dst}`);
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  duplicateNote: async (path: string) => {
+    try {
+      const content = await api.readNote(path);
+      const base = path.endsWith(".md") ? path.slice(0, -3) : path;
+      const existing = new Set(flattenFiles(get().tree));
+      let candidate = `${base}-copy.md`;
+      let n = 1;
+      while (existing.has(candidate)) {
+        candidate = `${base}-copy-${n}.md`;
+        n += 1;
+      }
+      await api.writeNote(candidate, content);
+      await get().loadTree();
+      await get().selectNote(candidate);
+      await get().pushChanges(`duplicate ${path}`);
     } catch (e) {
       set({ error: String(e) });
     }
