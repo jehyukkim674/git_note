@@ -34,6 +34,7 @@ pub fn run() {
             commands::write_note,
             commands::delete_note,
             commands::search_notes,
+            commands::save_asset,
             commands::clone_repo,
             commands::changed_paths
         ])

@@ -79,6 +79,17 @@ pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::
     vault::search(&root, &query).map_err(|e| e.to_string())
 }
 
+/// 이미지/첨부를 assets/에 저장하고 상대경로를 돌려준다.
+#[tauri::command]
+pub fn save_asset(
+    state: State<AppState>,
+    filename: String,
+    bytes: Vec<u8>,
+) -> Result<String, String> {
+    let root = vault_root(&state)?;
+    vault::save_asset(&root, &filename, &bytes).map_err(|e| e.to_string())
+}
+
 /// 저장소를 clone 한다. 성공 시 clone된 경로를 문자열로 돌려준다.
 #[tauri::command]
 pub fn clone_repo(url: String, into: String, token: Option<String>) -> Result<String, String> {

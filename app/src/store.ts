@@ -8,6 +8,7 @@ interface AppStore {
   dirty: boolean;
   loading: boolean;
   error: string | null;
+  vaultPath: string | null;
   searchQuery: string;
   searchResults: SearchHit[];
 
@@ -26,13 +27,15 @@ export const useStore = create<AppStore>((set, get) => ({
   dirty: false,
   loading: false,
   error: null,
+  vaultPath: null,
   searchQuery: "",
   searchResults: [],
 
   init: async () => {
     set({ loading: true, error: null });
     try {
-      await api.ensureVault();
+      const cfg = await api.ensureVault();
+      set({ vaultPath: cfg.vault_path });
       await get().loadTree();
     } catch (e) {
       set({ error: String(e) });

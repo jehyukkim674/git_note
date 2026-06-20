@@ -104,6 +104,63 @@ pub fn delete_note(root: &Path, rel: &str) -> Result<(), GitError> {
     Ok(())
 }
 
+/// 파일명에서 경로/위험 문자를 제거한다.
+fn sanitize_filename(name: &str) -> String {
+    let base = Path::new(name)
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "file".to_string());
+    let cleaned: String = base
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || matches!(c, '.' | '-' | '_') {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if cleaned.is_empty() {
+        "file".to_string()
+    } else {
+        cleaned
+    }
+}
+
+/// 이미지/첨부를 `assets/`에 저장하고 root 기준 상대경로를 돌려준다.
+/// 같은 이름이 있으면 `-1`, `-2` … 접미사로 충돌을 피한다.
+pub fn save_asset(root: &Path, filename: &str, bytes: &[u8]) -> Result<String, GitError> {
+    let name = sanitize_filename(filename);
+    let assets = root.join("assets");
+    fs::create_dir_all(&assets)?;
+
+    let mut target = assets.join(&name);
+    if target.exists() {
+        let path = Path::new(&name);
+        let stem = path
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| "file".to_string());
+        let ext = path
+            .extension()
+            .map(|s| format!(".{}", s.to_string_lossy()))
+            .unwrap_or_default();
+        let mut n = 1;
+        loop {
+            let candidate = assets.join(format!("{stem}-{n}{ext}"));
+            if !candidate.exists() {
+                target = candidate;
+                break;
+            }
+            n += 1;
+        }
+    }
+
+    fs::write(&target, bytes)?;
+    let file = target.file_name().unwrap().to_string_lossy().to_string();
+    Ok(format!("assets/{file}"))
+}
+
 /// 검색 결과 한 건.
 #[derive(Debug, Serialize, PartialEq)]
 pub struct SearchHit {
@@ -253,5 +310,29 @@ mod tests {
         let dir = temp_root();
         write_note(dir.path(), "a.md", "content").unwrap();
         assert!(search(dir.path(), "   ").unwrap().is_empty());
+    }
+
+    #[test]
+    fn save_asset_writes_and_returns_relative_path() {
+        let dir = temp_root();
+        let rel = save_asset(dir.path(), "pic.png", b"\x89PNG").unwrap();
+        assert_eq!(rel, "assets/pic.png");
+        assert_eq!(fs::read(dir.path().join("assets/pic.png")).unwrap(), b"\x89PNG");
+    }
+
+    #[test]
+    fn save_asset_dedupes_name() {
+        let dir = temp_root();
+        let first = save_asset(dir.path(), "pic.png", b"a").unwrap();
+        let second = save_asset(dir.path(), "pic.png", b"b").unwrap();
+        assert_eq!(first, "assets/pic.png");
+        assert_eq!(second, "assets/pic-1.png");
+    }
+
+    #[test]
+    fn save_asset_strips_path_traversal() {
+        let dir = temp_root();
+        let rel = save_asset(dir.path(), "../../etc/passwd", b"x").unwrap();
+        assert_eq!(rel, "assets/passwd");
     }
 }

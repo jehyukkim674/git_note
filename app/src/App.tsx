@@ -1,12 +1,18 @@
 import { useEffect } from "react";
 import { useStore } from "./store";
+import { api } from "./lib/api";
 import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
 import { Preview } from "./components/Preview";
 import "./App.css";
 
+async function saveImage(file: File): Promise<string> {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  return api.saveAsset(file.name || "image.png", Array.from(buf));
+}
+
 function App() {
-  const { selectedPath, content, dirty, error, init, setContent, save } =
+  const { selectedPath, content, dirty, error, vaultPath, init, setContent, save } =
     useStore();
 
   useEffect(() => {
@@ -39,7 +45,7 @@ function App() {
           )}
         </div>
         {selectedPath ? (
-          <Editor value={content} onChange={setContent} />
+          <Editor value={content} onChange={setContent} saveImage={saveImage} />
         ) : (
           <div className="empty">왼쪽에서 노트를 선택하거나 새로 만드세요.</div>
         )}
@@ -47,7 +53,7 @@ function App() {
 
       <section className="preview-pane">
         <div className="pane-header">미리보기</div>
-        <Preview content={content} />
+        <Preview content={content} vaultPath={vaultPath} />
       </section>
 
       {error && <div className="error-toast">{error}</div>}
