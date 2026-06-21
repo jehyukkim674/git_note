@@ -129,14 +129,16 @@ jobs:
 
       - name: Build APK (debug-signed, sideload 가능)
         working-directory: app
+        # 실기기 아키텍처(arm64 + armv7)만 빌드. x86_64/i686(에뮬레이터)는
+        # 벤더드 OpenSSL의 SM4 x86 어셈블리를 NDK clang이 인식하지 못해 제외.
         run: |
           npx tauri android init
-          npx tauri android build --apk --debug
+          npx tauri android build --apk --debug --target aarch64 --target armv7
 
       - name: Upload APK to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          APK=$(find app/src-tauri/gen/android -name '*.apk' | head -n1)
-          echo "APK: $APK"
-          gh release upload "${{ github.ref_name }}" "$APK" --clobber
+          APKS=$(find app/src-tauri/gen/android -name '*.apk')
+          echo "APKs:"; echo "$APKS"
+          gh release upload "${{ github.ref_name }}" $APKS --clobber
