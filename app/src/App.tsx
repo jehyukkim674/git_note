@@ -234,6 +234,21 @@ function App() {
     return () => clearTimeout(t);
   }, [error, clearError]);
 
+  // 파일을 창에 드롭해도 웹뷰가 그 파일로 이동(=앱이 죽는 것처럼 보임)하지 않도록 차단.
+  // 에디터 위 이미지 드롭은 Editor가 별도로 처리한다.
+  useEffect(() => {
+    const prevent = (e: DragEvent) => {
+      if ((e.target as HTMLElement)?.closest?.(".cm-editor")) return;
+      e.preventDefault();
+    };
+    window.addEventListener("dragover", prevent);
+    window.addEventListener("drop", prevent);
+    return () => {
+      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("drop", prevent);
+    };
+  }, []);
+
   // 자동 저장: 편집 후 1.5초 로컬 저장(push 안 함) — 설정으로 끌 수 있음
   useEffect(() => {
     if (!autoSave || !dirty || !selectedPath) return;

@@ -177,6 +177,33 @@ export function Editor({ value, onChange, saveImage, spellcheck }: Props) {
           }
           return false;
         },
+        dragover(event) {
+          // 에디터 위 드롭을 허용하기 위해 기본 동작 차단(웹뷰 이탈 방지).
+          event.preventDefault();
+          return false;
+        },
+        drop(event, view) {
+          event.preventDefault();
+          const file = event.dataTransfer?.files?.[0];
+          if (saveImage && file && file.type.startsWith("image/")) {
+            void (async () => {
+              try {
+                const rel = await saveImage(file);
+                const pos =
+                  view.posAtCoords({ x: event.clientX, y: event.clientY }) ??
+                  view.state.selection.main.head;
+                const t = `![](${rel})`;
+                view.dispatch({
+                  changes: { from: pos, insert: t },
+                  selection: { anchor: pos + t.length },
+                });
+              } catch (e) {
+                console.error("image drop failed", e);
+              }
+            })();
+          }
+          return true;
+        },
       }),
     ];
     if (spellcheck) {
