@@ -95,7 +95,23 @@ jobs:
       - name: Install NDK
         run: |
           sdkmanager "ndk;26.1.10909125"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> "$GITHUB_ENV"
+          NDK="$ANDROID_HOME/ndk/26.1.10909125"
+          echo "NDK_HOME=$NDK" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$NDK" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$NDK" >> "$GITHUB_ENV"
+
+      - name: Prepare NDK toolchain for vendored OpenSSL
+        # NDK r26는 접두어 binutils(<triple>-ar/-ranlib)를 제거했으나
+        # openssl-src(android)는 이를 호출한다. llvm-* 로 심볼릭 링크해 보충한다.
+        run: |
+          BIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          echo "$BIN" >> "$GITHUB_PATH"
+          for t in aarch64-linux-android armv7a-linux-androideabi arm-linux-androideabi i686-linux-android x86_64-linux-android; do
+            ln -sf "$BIN/llvm-ar" "$BIN/${t}-ar"
+            ln -sf "$BIN/llvm-ranlib" "$BIN/${t}-ranlib"
+            ln -sf "$BIN/llvm-strip" "$BIN/${t}-strip"
+            ln -sf "$BIN/llvm-nm" "$BIN/${t}-nm"
+          done
 
       - name: Setup Rust (Android targets)
         uses: dtolnay/rust-toolchain@stable
