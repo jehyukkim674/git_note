@@ -16,7 +16,7 @@ struct SyncCtx {
 }
 
 fn sync_ctx(state: &AppState) -> Result<SyncCtx, String> {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let root = cfg
         .vault_path
         .clone()
@@ -66,7 +66,7 @@ fn client_id(state: &AppState) -> Result<String, String> {
 
 /// 설정된 보관함 루트 경로를 돌려준다.
 fn vault_root(state: &AppState) -> Result<PathBuf, String> {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     cfg.vault_path
         .clone()
         .map(PathBuf::from)
@@ -76,13 +76,13 @@ fn vault_root(state: &AppState) -> Result<PathBuf, String> {
 /// 현재 설정을 돌려준다.
 #[tauri::command]
 pub fn get_config(state: State<AppState>) -> AppConfig {
-    state.config.lock().unwrap().clone()
+    state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
 }
 
 /// 보관함이 없으면 기본 로컬 경로로 만들고(빈 경우 환영 노트 생성), 설정을 저장한다.
 #[tauri::command]
 pub fn ensure_vault(state: State<AppState>) -> Result<AppConfig, String> {
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     if cfg.vault_path.is_none() {
         cfg.vault_path = Some(state.default_vault.to_string_lossy().to_string());
     }
@@ -176,7 +176,7 @@ pub fn search_notes(state: State<AppState>, query: String) -> Result<Vec<vault::
 /// GitHub OAuth App client_id를 저장한다.
 #[tauri::command]
 pub fn set_github_client_id(state: State<AppState>, client_id: String) -> Result<(), String> {
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     cfg.github_client_id = Some(client_id);
     cfg.save(&state.config_path).map_err(|e| e.to_string())
 }
@@ -203,7 +203,7 @@ pub async fn github_poll(
             auth::store_token(&tok)?;
             // 작성자가 기본값이면 GitHub 사용자로 자동 설정
             if let Ok(user) = auth::fetch_user(&tok).await {
-                let mut cfg = state.config.lock().unwrap();
+                let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 if cfg.author_name == "git_note" {
                     cfg.author_email = user
                         .email
@@ -232,7 +232,7 @@ pub fn github_logout() -> Result<(), String> {
 /// 커밋 작성자 정보를 저장한다.
 #[tauri::command]
 pub fn set_author(state: State<AppState>, name: String, email: String) -> Result<(), String> {
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     cfg.author_name = name;
     cfg.author_email = email;
     cfg.save(&state.config_path).map_err(|e| e.to_string())
@@ -247,7 +247,7 @@ pub fn connect_repo(
 ) -> Result<AppConfig, String> {
     let token = auth::get_token();
     let root_path = {
-        let cfg = state.config.lock().unwrap();
+        let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let root = cfg
             .vault_path
             .clone()
@@ -265,7 +265,7 @@ pub fn connect_repo(
         repo::clone_repo(&repo_url, &root_path, token).map_err(|e| e.to_string())?;
     }
 
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     cfg.vault_path = Some(root_path.to_string_lossy().to_string());
     cfg.repo_url = Some(repo_url);
     cfg.branch = branch;

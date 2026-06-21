@@ -104,9 +104,15 @@ function App() {
 
   const closeMenu = (e: React.MouseEvent) =>
     (e.currentTarget as HTMLElement).closest("details")?.removeAttribute("open");
-  const copyMarkdown = () => navigator.clipboard.writeText(content);
-  const copyHtml = () =>
-    navigator.clipboard.writeText(renderMarkdown(content, vaultPath));
+  const copyText = (s: string) => {
+    try {
+      void navigator.clipboard?.writeText(s)?.catch(() => {});
+    } catch {
+      /* 클립보드 미지원 환경 무시 */
+    }
+  };
+  const copyMarkdown = () => copyText(content);
+  const copyHtml = () => copyText(renderMarkdown(content, vaultPath));
   const insertToc = () => {
     const toc = generateToc(content);
     if (toc) setContent(`${toc}\n${content}`);

@@ -24,40 +24,51 @@ export function Preview({ content, vaultPath, onWikiLink, onToggleTask }: Props)
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-
-    root.querySelectorAll("pre").forEach((pre) => {
-      if (pre.querySelector(".code-copy")) return;
-      const btn = document.createElement("button");
-      btn.className = "code-copy";
-      btn.type = "button";
-      btn.textContent = "복사";
-      btn.addEventListener("click", () => {
-        const code = pre.querySelector("code")?.textContent ?? pre.textContent ?? "";
-        void navigator.clipboard.writeText(code).then(() => {
-          btn.textContent = "복사됨!";
-          setTimeout(() => (btn.textContent = "복사"), 1200);
+    try {
+      root.querySelectorAll("pre").forEach((pre) => {
+        if (pre.querySelector(".code-copy")) return;
+        const btn = document.createElement("button");
+        btn.className = "code-copy";
+        btn.type = "button";
+        btn.textContent = "복사";
+        btn.addEventListener("click", () => {
+          const code =
+            pre.querySelector("code")?.textContent ?? pre.textContent ?? "";
+          try {
+            void navigator.clipboard
+              ?.writeText(code)
+              ?.then(() => {
+                btn.textContent = "복사됨!";
+                setTimeout(() => (btn.textContent = "복사"), 1200);
+              })
+              .catch(() => {});
+          } catch {
+            /* 클립보드 미지원 무시 */
+          }
         });
+        pre.appendChild(btn);
       });
-      pre.appendChild(btn);
-    });
 
-    // 8. 태스크 리스트 항목을 클릭 가능한 체크박스로 변환
-    let taskIdx = 0;
-    root.querySelectorAll("li").forEach((li) => {
-      const re = /^(<p>)?\[([ xX])\]\s/;
-      const m = li.innerHTML.match(re);
-      if (!m) return;
-      const idx = taskIdx++;
-      const checked = m[2].toLowerCase() === "x";
-      li.classList.add("task-item");
-      li.innerHTML = li.innerHTML.replace(
-        re,
-        (_full, p) =>
-          `${p ?? ""}<input type="checkbox" class="task-check" data-task="${idx}"${
-            checked ? " checked" : ""
-          } /> `
-      );
-    });
+      // 8. 태스크 리스트 항목을 클릭 가능한 체크박스로 변환
+      let taskIdx = 0;
+      root.querySelectorAll("li").forEach((li) => {
+        const re = /^(<p>)?\[([ xX])\]\s/;
+        const m = li.innerHTML.match(re);
+        if (!m) return;
+        const idx = taskIdx++;
+        const checked = m[2].toLowerCase() === "x";
+        li.classList.add("task-item");
+        li.innerHTML = li.innerHTML.replace(
+          re,
+          (_full, p) =>
+            `${p ?? ""}<input type="checkbox" class="task-check" data-task="${idx}"${
+              checked ? " checked" : ""
+            } /> `
+        );
+      });
+    } catch (e) {
+      console.error("preview enhance failed", e);
+    }
   }, [html]);
 
   // 8. 체크박스 변경을 원문에 반영(이벤트 위임)
