@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { TreeView } from "./TreeView";
 import { Dialog } from "./Dialog";
 import { splitHighlight } from "../lib/text";
+import { themeMeta, nextTheme } from "../lib/themes";
 import type { TreeNode } from "../lib/api";
 
 function countNotes(nodes: TreeNode[]): number {
@@ -61,7 +62,7 @@ export function Sidebar({
     loggedIn,
     syncStatus,
     theme,
-    toggleTheme,
+    cycleTheme,
     renameNote,
     duplicateNote,
     deleteNote,
@@ -122,11 +123,11 @@ export function Sidebar({
           </button>
           <button
             className="icon-btn"
-            title="테마 전환"
-            aria-label="테마 전환"
-            onClick={toggleTheme}
+            title={`테마: ${themeMeta(theme).label} → ${themeMeta(nextTheme(theme)).label}`}
+            aria-label={`테마 전환 (현재 ${themeMeta(theme).label})`}
+            onClick={cycleTheme}
           >
-            {theme === "dark" ? "☀" : "☾"}
+            {themeMeta(theme).dark ? "☾" : "☀"}
           </button>
         </span>
       </div>

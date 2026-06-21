@@ -7,6 +7,7 @@ import {
   type UpdateCheck,
 } from "../lib/api";
 import { useStore } from "../store";
+import { THEMES } from "../lib/themes";
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const {
@@ -16,6 +17,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     syncStatus,
     fontSize,
     setFontSize,
+    theme,
+    setTheme,
     refreshAuth,
     logout,
     connectRepo,
@@ -264,6 +267,34 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <li><kbd>⌘/Ctrl + N</kbd> 새 노트</li>
             <li><kbd>⌘/Ctrl + K</kbd> 빠른 열기</li>
           </ul>
+        </section>
+
+        <section className="settings-section">
+          <h3>테마</h3>
+          <div className="theme-grid">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                className={"theme-swatch" + (theme === t.id ? " active" : "")}
+                onClick={() => setTheme(t.id)}
+                title={t.label}
+                aria-label={`테마 ${t.label}`}
+                aria-pressed={theme === t.id}
+              >
+                <span
+                  className="theme-preview"
+                  style={{ background: t.bg }}
+                  data-theme={t.id}
+                >
+                  <span
+                    className="theme-dot"
+                    style={{ background: t.swatch }}
+                  />
+                </span>
+                <span className="theme-name">{t.label}</span>
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="settings-section">

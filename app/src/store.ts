@@ -7,6 +7,7 @@ import {
   type TreeNode,
 } from "./lib/api";
 import { flattenFiles } from "./lib/tree";
+import { type ThemeId, isThemeId, nextTheme } from "./lib/themes";
 
 export type SyncStatus =
   | "idle"
@@ -48,7 +49,7 @@ interface AppStore {
   config: AppConfig | null;
   syncStatus: SyncStatus;
   conflicts: string[];
-  theme: "light" | "dark";
+  theme: ThemeId;
   recent: string[];
   pinned: string[];
   sortBy: "name" | "modified";
@@ -75,16 +76,17 @@ interface AppStore {
   duplicateNote: (path: string) => Promise<void>;
   deleteNote: (path: string) => Promise<void>;
   clearError: () => void;
-  toggleTheme: () => void;
+  setTheme: (theme: ThemeId) => void;
+  cycleTheme: () => void;
   setSortBy: (sortBy: "name" | "modified") => void;
   togglePin: (path: string) => void;
   setFontSize: (fontSize: "sm" | "md" | "lg") => void;
 }
 
-function initialTheme(): "light" | "dark" {
+function initialTheme(): ThemeId {
   if (typeof localStorage !== "undefined") {
     const saved = localStorage.getItem("theme");
-    if (saved === "dark" || saved === "light") return saved;
+    if (isThemeId(saved)) return saved;
   }
   if (typeof window !== "undefined" && window.matchMedia) {
     return window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -318,8 +320,13 @@ export const useStore = create<AppStore>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  toggleTheme: () => {
-    const theme = get().theme === "dark" ? "light" : "dark";
+  setTheme: (theme: ThemeId) => {
+    if (typeof localStorage !== "undefined") localStorage.setItem("theme", theme);
+    set({ theme });
+  },
+
+  cycleTheme: () => {
+    const theme = nextTheme(get().theme);
     if (typeof localStorage !== "undefined") localStorage.setItem("theme", theme);
     set({ theme });
   },

@@ -9,6 +9,7 @@
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-soft: #eaf1ff;
+  --on-accent: #ffffff;
   --danger: #dc2626;
   --danger-soft: #fee2e2;
   --success: #16a34a;
@@ -24,6 +25,18 @@
   --t-med: 0.2s ease;
 }
 
+/* 다크 계열 공통 그림자 */
+[data-theme="dark"],
+[data-theme="nord"],
+[data-theme="solarized"],
+[data-theme="dracula"],
+[data-theme="rose-pine"],
+[data-theme="high-contrast"] {
+  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --sh-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --sh-lg: 0 14px 48px rgba(0, 0, 0, 0.6);
+}
+
 [data-theme="dark"] {
   --bg: #1a1b1e;
   --bg-alt: #232529;
@@ -35,15 +48,139 @@
   --accent: #3b82f6;
   --accent-hover: #60a5fa;
   --accent-soft: #1e324d;
+  --on-accent: #ffffff;
   --danger: #ef4444;
   --danger-soft: #3a1c1c;
   --success: #22c55e;
-  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --sh-md: 0 6px 20px rgba(0, 0, 0, 0.4);
-  --sh-lg: 0 14px 48px rgba(0, 0, 0, 0.55);
 }
 
-[data-theme="dark"] body {
+/* 세피아 — 따뜻한 종이 느낌(라이트) */
+[data-theme="sepia"] {
+  --bg: #f4ecd8;
+  --bg-alt: #ebe1c8;
+  --bg-elevated: #faf4e4;
+  --border: #ddd0b0;
+  --border-strong: #c8b890;
+  --text: #5b4636;
+  --text-dim: #8a7355;
+  --accent: #9c5a2e;
+  --accent-hover: #82491f;
+  --accent-soft: #e8d9bd;
+  --on-accent: #fdf6e8;
+  --danger: #b3402e;
+  --danger-soft: #efd6cd;
+  --success: #5a7a3a;
+}
+
+/* 노르드 — 차가운 청회색(다크) */
+[data-theme="nord"] {
+  --bg: #2e3440;
+  --bg-alt: #3b4252;
+  --bg-elevated: #434c5e;
+  --border: #434c5e;
+  --border-strong: #4c566a;
+  --text: #e5e9f0;
+  --text-dim: #abb4c6;
+  --accent: #88c0d0;
+  --accent-hover: #8fbcbb;
+  --accent-soft: #3b4a55;
+  --on-accent: #2e3440;
+  --danger: #bf616a;
+  --danger-soft: #46383c;
+  --success: #a3be8c;
+}
+
+/* 솔라라이즈드 다크 — 청록 베이스(다크) */
+[data-theme="solarized"] {
+  --bg: #002b36;
+  --bg-alt: #073642;
+  --bg-elevated: #0a4250;
+  --border: #0f4a59;
+  --border-strong: #586e75;
+  --text: #93a1a1;
+  --text-dim: #657b83;
+  --accent: #268bd2;
+  --accent-hover: #2aa198;
+  --accent-soft: #0a3a48;
+  --on-accent: #ffffff;
+  --danger: #dc322f;
+  --danger-soft: #3a201d;
+  --success: #859900;
+}
+
+/* 드라큘라 — 보라 강조(다크) */
+[data-theme="dracula"] {
+  --bg: #282a36;
+  --bg-alt: #21222c;
+  --bg-elevated: #343746;
+  --border: #44475a;
+  --border-strong: #6272a4;
+  --text: #f8f8f2;
+  --text-dim: #9ea4c4;
+  --accent: #bd93f9;
+  --accent-hover: #d0aaff;
+  --accent-soft: #3a2f4d;
+  --on-accent: #282a36;
+  --danger: #ff5555;
+  --danger-soft: #3f2230;
+  --success: #50fa7b;
+}
+
+/* 로즈 파인 — 장미빛 보라(다크) */
+[data-theme="rose-pine"] {
+  --bg: #191724;
+  --bg-alt: #1f1d2e;
+  --bg-elevated: #26233a;
+  --border: #26233a;
+  --border-strong: #403d52;
+  --text: #e0def4;
+  --text-dim: #908caa;
+  --accent: #c4a7e7;
+  --accent-hover: #d4bdf0;
+  --accent-soft: #2a2440;
+  --on-accent: #191724;
+  --danger: #eb6f92;
+  --danger-soft: #3a2330;
+  --success: #9ccfd8;
+}
+
+/* 포레스트 — 초록 자연(라이트) */
+[data-theme="forest"] {
+  --bg: #f3f7f0;
+  --bg-alt: #e6efe0;
+  --bg-elevated: #ffffff;
+  --border: #cfe0c5;
+  --border-strong: #aecb9f;
+  --text: #243524;
+  --text-dim: #5d7058;
+  --accent: #3f7d3f;
+  --accent-hover: #336433;
+  --accent-soft: #dcebd3;
+  --on-accent: #ffffff;
+  --danger: #c0392b;
+  --danger-soft: #f3d9d4;
+  --success: #2e7d32;
+}
+
+/* 고대비 — 접근성(다크) */
+[data-theme="high-contrast"] {
+  --bg: #000000;
+  --bg-alt: #0c0c0c;
+  --bg-elevated: #161616;
+  --border: #6b6b6b;
+  --border-strong: #ffffff;
+  --text: #ffffff;
+  --text-dim: #d4d4d4;
+  --accent: #ffd400;
+  --accent-hover: #ffe44d;
+  --accent-soft: #3a3300;
+  --on-accent: #000000;
+  --danger: #ff6b6b;
+  --danger-soft: #3a0000;
+  --success: #5ce65c;
+}
+
+body {
   background: var(--bg);
 }
 
@@ -596,7 +733,7 @@ button {
 
 .font-buttons button.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -848,7 +985,7 @@ kbd {
 }
 .tag-chip:hover {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .tag-chip:active,
 .backlink:active {
@@ -1080,7 +1217,7 @@ kbd {
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
   margin-right: 8px;
   transition: background var(--t-fast), transform var(--t-fast);
@@ -1105,9 +1242,10 @@ kbd {
 .modal button.danger {
   background: var(--danger);
   border-color: var(--danger);
+  color: #fff;
 }
 .modal button.danger:hover {
-  background: #b91c1c;
+  filter: brightness(0.9);
 }
 
 .modal .link {
@@ -1253,6 +1391,65 @@ kbd {
 .footer-gear {
   margin-left: auto;
   opacity: 0.7;
+}
+
+/* 테마 선택 그리드 */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  margin: 0;
+  color: var(--text);
+  transition: border-color var(--t-fast), transform var(--t-fast);
+}
+.theme-swatch:hover {
+  border-color: var(--border-strong);
+}
+.theme-swatch:active {
+  transform: scale(0.97);
+}
+.theme-swatch.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.theme-preview {
+  width: 100%;
+  height: 34px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 7px;
+}
+
+.theme-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(127, 127, 127, 0.25);
+}
+
+.theme-name {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.theme-swatch.active .theme-name {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /* 30. 모바일: 탭 타깃 확대 + safe-area */
