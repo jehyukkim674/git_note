@@ -30,6 +30,25 @@ pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
     Ok(Repository::open(path)?)
 }
 
+/// 기존(노트가 있는) 폴더를 git 저장소로 만들어 원격에 올린다.
+/// 비어있는 원격에 로컬 노트를 처음 연결할 때 사용한다.
+pub fn init_and_adopt(
+    path: &Path,
+    url: &str,
+    branch: &str,
+    name: &str,
+    email: &str,
+    token: Option<String>,
+) -> Result<(), GitError> {
+    let repo = Repository::init(path)?;
+    // 첫 커밋이 지정한 브랜치에 올라가도록 HEAD를 미리 가리킨다.
+    let _ = repo.set_head(&format!("refs/heads/{branch}"));
+    repo.remote("origin", url)?;
+    stage_all_and_commit(&repo, "import existing notes", name, email)?;
+    push(&repo, branch, token)?;
+    Ok(())
+}
+
 /// 작업트리의 모든 변경을 스테이징하고 커밋한다. 커밋 Oid를 돌려준다.
 pub fn stage_all_and_commit(
     repo: &Repository,

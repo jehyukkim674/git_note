@@ -246,23 +246,39 @@ pub fn connect_repo(
     branch: String,
 ) -> Result<AppConfig, String> {
     let token = auth::get_token();
-    let root_path = {
+    let (root_path, author_name, author_email) = {
         let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let root = cfg
             .vault_path
             .clone()
             .unwrap_or_else(|| state.default_vault.to_string_lossy().to_string());
-        PathBuf::from(root)
+        (PathBuf::from(root), cfg.author_name.clone(), cfg.author_email.clone())
     };
+    let commit_name = if author_name.trim().is_empty() { "git_note".to_string() } else { author_name };
+    let commit_email = if author_email.trim().is_empty() { "git_note@local".to_string() } else { author_email };
 
     if !root_path.join(".git").exists() {
-        if !effectively_empty(&root_path) {
-            return Err(
-                "보관함이 비어있지 않습니다. 기존 노트를 옮기거나 빈 폴더에 연결하세요.".to_string(),
-            );
+        if effectively_empty(&root_path) {
+            // 빈 보관함: 원격을 그대로 clone.
+            let _ = fs::remove_dir_all(&root_path);
+            repo::clone_repo(&repo_url, &root_path, token).map_err(|e| e.to_string())?;
+        } else {
+            // 기존 노트가 있는 보관함: 비어있는 원격에 현재 노트를 올린다.
+            fs::create_dir_all(&root_path).map_err(|e| e.to_string())?;
+            repo::init_and_adopt(
+                &root_path,
+                &repo_url,
+                &branch,
+                &commit_name,
+                &commit_email,
+                token,
+            )
+            .map_err(|e| {
+                format!(
+                    "기존 노트를 원격에 올리지 못했습니다. 원격 저장소가 비어 있어야 합니다(이미 내용이 있으면 빈 저장소를 쓰세요). 상세: {e}"
+                )
+            })?;
         }
-        let _ = fs::remove_dir_all(&root_path);
-        repo::clone_repo(&repo_url, &root_path, token).map_err(|e| e.to_string())?;
     }
 
     let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
