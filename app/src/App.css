@@ -10,6 +10,9 @@
   --accent-hover: #1d4ed8;
   --accent-soft: #eaf1ff;
   --on-accent: #ffffff;
+  /* 상태바/액티비티바 기본값(테마에서 덮어쓸 수 있음) */
+  --statusbar-bg: var(--accent);
+  --activitybar-bg: var(--bg-alt);
   --danger: #dc2626;
   --danger-soft: #fee2e2;
   --success: #16a34a;
@@ -31,18 +34,39 @@
 [data-theme="solarized"],
 [data-theme="dracula"],
 [data-theme="rose-pine"],
-[data-theme="high-contrast"] {
+[data-theme="high-contrast"],
+[data-theme="vscode"] {
   --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --sh-md: 0 6px 20px rgba(0, 0, 0, 0.4);
   --sh-lg: 0 14px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* VS Code Dark+ — 기본 테마 */
+[data-theme="vscode"] {
+  --bg: #1e1e1e;
+  --bg-alt: #252526;
+  --bg-elevated: #2d2d30;
+  --border: #3c3c3c;
+  --border-strong: #5a5a5a;
+  --text: #d4d4d4;
+  --text-dim: #9d9d9d;
+  --accent: #2188e0;
+  --accent-hover: #3a9bef;
+  --accent-soft: #0a2e49;
+  --on-accent: #051a2e;
+  --danger: #f14c4c;
+  --danger-soft: #5a1d1d;
+  --success: #4ec9b0;
+  --statusbar-bg: #007acc;
+  --activitybar-bg: #333333;
 }
 
 [data-theme="dark"] {
   --bg: #1a1b1e;
   --bg-alt: #232529;
   --bg-elevated: #2a2c31;
-  --border: #34373d;
-  --border-strong: #43464d;
+  --border: #3c4047;
+  --border-strong: #565a63;
   --text: #e6e8eb;
   --text-dim: #9aa1ab;
   --accent: #3b82f6;
@@ -77,8 +101,8 @@
   --bg: #2e3440;
   --bg-alt: #3b4252;
   --bg-elevated: #434c5e;
-  --border: #434c5e;
-  --border-strong: #4c566a;
+  --border: #4a5365;
+  --border-strong: #616d82;
   --text: #e5e9f0;
   --text-dim: #abb4c6;
   --accent: #88c0d0;
@@ -113,7 +137,7 @@
   --bg: #282a36;
   --bg-alt: #21222c;
   --bg-elevated: #343746;
-  --border: #44475a;
+  --border: #4d5066;
   --border-strong: #6272a4;
   --text: #f8f8f2;
   --text-dim: #9ea4c4;
@@ -131,8 +155,8 @@
   --bg: #191724;
   --bg-alt: #1f1d2e;
   --bg-elevated: #26233a;
-  --border: #26233a;
-  --border-strong: #403d52;
+  --border: #322d47;
+  --border-strong: #524d6b;
   --text: #e0def4;
   --text-dim: #908caa;
   --accent: #c4a7e7;
@@ -303,7 +327,7 @@ button {
 
 .sidebar {
   background: var(--bg-alt);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-strong);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -313,7 +337,7 @@ button {
 .sidebar-header {
   font-weight: 700;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -350,15 +374,18 @@ button {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
   color: var(--text);
-  padding: 4px 7px;
+  padding: 5px 7px;
   border-radius: var(--r-sm);
-  transition: background var(--t-fast), transform var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
 }
 
 .icon-btn:hover {
   background: var(--accent-soft);
+  color: var(--text);
 }
 .icon-btn:active {
   transform: scale(0.92);
@@ -394,7 +421,8 @@ button {
   border: none;
   cursor: pointer;
   font-size: 12px;
-  opacity: 0.55;
+  color: var(--text);
+  opacity: 0.75;
   padding: 2px 4px;
   border-radius: var(--r-sm);
   transition: opacity var(--t-fast), background var(--t-fast);
@@ -533,7 +561,7 @@ button {
   border: none;
   border-radius: var(--r-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
   font-size: 14px;
 }
@@ -571,7 +599,7 @@ button {
 /* 5. 선택된 행: 부드러운 배경 + 액센트 좌측 바 */
 .tree-file.selected {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--text);
   font-weight: 600;
   border-left-color: var(--accent);
 }
@@ -596,7 +624,7 @@ button {
 }
 
 .preview-pane {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-strong);
   background: var(--bg);
 }
 
@@ -606,7 +634,7 @@ button {
   align-items: center;
   justify-content: space-between;
   padding: 9px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
   font-size: 12px;
   color: var(--text-dim);
   min-height: 42px;
@@ -848,6 +876,12 @@ kbd {
 
 .outline-item:hover {
   background: var(--accent-soft);
+}
+
+.outline-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .outline-empty {
@@ -1120,7 +1154,13 @@ kbd {
   border-bottom: 1px solid var(--border);
 }
 
-[data-theme="dark"] .conflict-inline {
+[data-theme="dark"] .conflict-inline,
+[data-theme="nord"] .conflict-inline,
+[data-theme="solarized"] .conflict-inline,
+[data-theme="dracula"] .conflict-inline,
+[data-theme="rose-pine"] .conflict-inline,
+[data-theme="high-contrast"] .conflict-inline,
+[data-theme="vscode"] .conflict-inline {
   background: #422006;
   color: #fde68a;
 }
@@ -1422,7 +1462,7 @@ kbd {
 
 .footer-gear {
   margin-left: auto;
-  opacity: 0.7;
+  opacity: 0.9;
 }
 
 /* 테마 선택 그리드 */
@@ -1482,6 +1522,104 @@ kbd {
 .theme-swatch.active .theme-name {
   color: var(--accent);
   font-weight: 600;
+}
+
+/* ===== VS Code 스타일 셸: 액티비티 바 + 하단 상태바 ===== */
+.app-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.app-main > .app {
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-bar {
+  width: 48px;
+  flex-shrink: 0;
+  background: var(--activitybar-bg);
+  border-right: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+  gap: 2px;
+}
+.activity-bar .spacer {
+  flex: 1;
+}
+.act-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 19px;
+  border-radius: 0;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.act-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+.act-btn.active {
+  color: #fff;
+  border-left-color: var(--accent);
+}
+
+.status-bar {
+  height: 22px;
+  flex-shrink: 0;
+  background: var(--statusbar-bg);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 0 8px;
+  user-select: none;
+}
+.status-bar .status-left,
+.status-bar .status-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 22px;
+  line-height: 22px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: default;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button.status-item {
+  cursor: pointer;
+}
+button.status-item:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* 26. 보기 모드 / 25. 젠 모드 그리드 */
@@ -1753,6 +1891,11 @@ kbd {
   border: none;
   cursor: pointer;
   text-align: left;
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast);
+}
+.section-toggle:hover {
+  background: var(--accent-soft);
 }
 .section-toggle .tree-caret {
   font-size: 10px;

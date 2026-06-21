@@ -1,4 +1,5 @@
 export type ThemeId =
+  | "vscode"
   | "light"
   | "dark"
   | "sepia"
@@ -21,6 +22,7 @@ export interface ThemeMeta {
 }
 
 export const THEMES: ThemeMeta[] = [
+  { id: "vscode", label: "VS Code", dark: true, bg: "#1e1e1e", swatch: "#2188e0" },
   { id: "light", label: "라이트", dark: false, bg: "#ffffff", swatch: "#2563eb" },
   { id: "dark", label: "다크", dark: true, bg: "#1a1b1e", swatch: "#3b82f6" },
   { id: "sepia", label: "세피아", dark: false, bg: "#f4ecd8", swatch: "#9c5a2e" },

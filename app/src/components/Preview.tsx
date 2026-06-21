@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { renderMarkdown } from "../lib/markdown";
 
@@ -13,9 +13,11 @@ export function Preview({ content, vaultPath, onWikiLink, onToggleTask }: Props)
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const [showTop, setShowTop] = useState(false);
+  // 대용량 노트에서 입력 반응성을 유지하기 위해 렌더를 지연 처리한다.
+  const deferred = useDeferredValue(content);
   const html = useMemo(
-    () => renderMarkdown(content, vaultPath),
-    [content, vaultPath]
+    () => renderMarkdown(deferred, vaultPath),
+    [deferred, vaultPath]
   );
 
   // 27. 코드 블록 복사 버튼 + 8. 체크박스 토글

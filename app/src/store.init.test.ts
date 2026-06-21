@@ -8,26 +8,9 @@ beforeEach(() => {
 });
 
 describe("스토어 초기화(localStorage/시스템 설정)", () => {
-  it("저장된 테마가 없고 시스템이 다크면 dark로 시작한다", async () => {
-    window.matchMedia = ((q: string) => ({
-      matches: true,
-      media: q,
-      addEventListener() {},
-      removeEventListener() {},
-    })) as unknown as typeof window.matchMedia;
+  it("저장된 테마가 없으면 vscode로 시작한다", async () => {
     const { useStore } = await import("./store");
-    expect(useStore.getState().theme).toBe("dark");
-  });
-
-  it("저장된 테마가 없고 시스템이 라이트면 light로 시작한다", async () => {
-    window.matchMedia = ((q: string) => ({
-      matches: false,
-      media: q,
-      addEventListener() {},
-      removeEventListener() {},
-    })) as unknown as typeof window.matchMedia;
-    const { useStore } = await import("./store");
-    expect(useStore.getState().theme).toBe("light");
+    expect(useStore.getState().theme).toBe("vscode");
   });
 
   it("저장된 설정(테마/폰트/플래그/간격/정렬)을 불러온다", async () => {
@@ -53,11 +36,10 @@ describe("스토어 초기화(localStorage/시스템 설정)", () => {
     expect(s.recent).toEqual(["a.md"]);
   });
 
-  it("matchMedia가 없으면 light로 폴백한다", async () => {
-    // @ts-expect-error 테스트에서 matchMedia 제거
-    delete window.matchMedia;
+  it("잘못된 테마 저장값은 vscode로 폴백한다", async () => {
+    localStorage.setItem("theme", "없는테마");
     const { useStore } = await import("./store");
-    expect(useStore.getState().theme).toBe("light");
+    expect(useStore.getState().theme).toBe("vscode");
   });
 
   it("잘못된 저장값은 기본값으로 폴백한다", async () => {

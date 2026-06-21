@@ -560,24 +560,65 @@ function App() {
     );
   }
 
-  return (
-    <div
-      className={`app view-${viewMode} font-${fontSize}`}
-      style={{ ["--sidebar-w" as string]: `${sidebarW}px` } as React.CSSProperties}
-    >
-      {sidebar}
-      <div
-        className="sidebar-resizer"
-        onMouseDown={startResize}
-        role="separator"
-        aria-label="사이드바 너비 조절"
-      />
-      {viewMode !== "preview" && editorPane}
-      {viewMode !== "editor" && previewPane}
+  const syncText = SYNC_TEXT[syncStatus] ?? syncStatus;
+  const focusSearch = () =>
+    (document.querySelector(".search-box") as HTMLInputElement | null)?.focus();
 
+  return (
+    <div className="app-shell">
+      <div className="app-main">
+        <nav className="activity-bar" aria-label="활동 막대">
+          <button className="act-btn active" title="탐색기" aria-label="탐색기">🗂</button>
+          <button className="act-btn" title="검색" aria-label="검색" onClick={focusSearch}>🔍</button>
+          <button className="act-btn" title="소스 제어(동기화)" aria-label="동기화" onClick={() => syncNow()}>⟳</button>
+          <button className="act-btn" title="새 노트 (⌘N)" aria-label="새 노트" onClick={() => setAppDialog({ kind: "newNote" })}>＋</button>
+          <span className="spacer" />
+          <button className="act-btn" title="설정" aria-label="설정" onClick={() => setSettingsOpen(true)}>⚙</button>
+        </nav>
+        <div
+          className={`app view-${viewMode} font-${fontSize}`}
+          style={{ ["--sidebar-w" as string]: `${sidebarW}px` } as React.CSSProperties}
+        >
+          {sidebar}
+          <div
+            className="sidebar-resizer"
+            onMouseDown={startResize}
+            role="separator"
+            aria-label="사이드바 너비 조절"
+          />
+          {viewMode !== "preview" && editorPane}
+          {viewMode !== "editor" && previewPane}
+        </div>
+      </div>
+      <footer className="status-bar">
+        <div className="status-left">
+          <button className="status-item" onClick={() => syncNow()} title="지금 동기화">
+            ⎇ {config?.branch ?? "main"} · {syncText}
+          </button>
+          {selectedPath && <span className="status-item">{selectedPath}</span>}
+        </div>
+        <div className="status-right">
+          {selectedPath && (
+            <span className="status-item">{wordInfo.words}단어 · {wordInfo.mins}분</span>
+          )}
+          <span className="status-item">Markdown</span>
+          <span className="status-item">UTF-8</span>
+          <button className="status-item" onClick={() => setShowHelp(true)} title="단축키">⌘ 단축키</button>
+        </div>
+      </footer>
       {overlays}
     </div>
   );
 }
+
+const SYNC_TEXT: Record<string, string> = {
+  idle: "대기",
+  syncing: "동기화 중…",
+  synced: "동기화됨",
+  offline: "오프라인",
+  conflict: "충돌",
+  norepo: "저장소 미연결",
+  error: "오류",
+};
 
 export default App;

@@ -108,12 +108,8 @@ function initialTheme(): ThemeId {
     const saved = localStorage.getItem("theme");
     if (isThemeId(saved)) return saved;
   }
-  if (typeof window !== "undefined" && window.matchMedia) {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  }
-  return "light";
+  // 저장값이 없으면 VS Code 스타일을 기본으로 사용한다.
+  return "vscode";
 }
 
 /// .md 확장자를 보장한다.

@@ -155,6 +155,8 @@ export function Sidebar({
     if (!q) return [];
     return flattenFiles(tree).filter((p) => p.toLowerCase().includes(q));
   }, [tree, searchQuery]);
+  // 대용량 보관함에서 DOM 폭주를 막기 위해 렌더 개수를 제한한다.
+  const RESULT_CAP = 300;
 
   // 20. 현재 노트의 상위 폴더를 모두 펼친다.
   const revealActive = () => {
@@ -309,9 +311,12 @@ export function Sidebar({
           {fileMatches.length === 0 ? (
             <li className="search-empty">결과 없음</li>
           ) : (
-            <li className="search-count">파일명 {fileMatches.length}개</li>
+            <li className="search-count">
+              파일명 {fileMatches.length}개
+              {fileMatches.length > RESULT_CAP && ` (상위 ${RESULT_CAP}개 표시)`}
+            </li>
           )}
-          {fileMatches.map((path) => (
+          {fileMatches.slice(0, RESULT_CAP).map((path) => (
             <li key={path}>
               <button className="search-hit" onClick={() => selectNote(path)}>
                 <span className="hit-path">
@@ -328,9 +333,12 @@ export function Sidebar({
           {searchResults.length === 0 ? (
             <li className="search-empty">결과 없음</li>
           ) : (
-            <li className="search-count">{searchResults.length}개 결과</li>
+            <li className="search-count">
+              {searchResults.length}개 결과
+              {searchResults.length > RESULT_CAP && ` (상위 ${RESULT_CAP}개 표시)`}
+            </li>
           )}
-          {searchResults.map((hit, i) => (
+          {searchResults.slice(0, RESULT_CAP).map((hit, i) => (
             <li key={`${hit.path}:${hit.line}:${i}`}>
               <button className="search-hit" onClick={() => selectNote(hit.path)}>
                 <span className="hit-path">{hit.path}</span>
