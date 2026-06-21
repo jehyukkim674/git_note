@@ -8,6 +8,7 @@ import {
 } from "./lib/api";
 import { flattenFiles } from "./lib/tree";
 import { type ThemeId, isThemeId, nextTheme } from "./lib/themes";
+import { formatDateYmd } from "./lib/text";
 
 export type SyncStatus =
   | "idle"
@@ -53,8 +54,16 @@ interface AppStore {
   recent: string[];
   pinned: string[];
   sortBy: "name" | "modified";
+  sortDir: "asc" | "desc";
   fontSize: "sm" | "md" | "lg";
   backlinks: string[];
+  // 설정 플래그
+  autoSave: boolean;
+  autoSync: boolean;
+  autoSyncSec: number;
+  confirmDelete: boolean;
+  spellcheck: boolean;
+  searchHistory: string[];
 
   init: () => Promise<void>;
   loadTree: () => Promise<void>;
@@ -79,8 +88,19 @@ interface AppStore {
   setTheme: (theme: ThemeId) => void;
   cycleTheme: () => void;
   setSortBy: (sortBy: "name" | "modified") => void;
+  setSortDir: (dir: "asc" | "desc") => void;
   togglePin: (path: string) => void;
   setFontSize: (fontSize: "sm" | "md" | "lg") => void;
+  // 신규 기능
+  openDailyNote: () => Promise<void>;
+  gotoAdjacentNote: (delta: number) => Promise<void>;
+  saveWithMessage: (message: string) => Promise<void>;
+  setAutoSave: (v: boolean) => void;
+  setAutoSync: (v: boolean) => void;
+  setAutoSyncSec: (v: number) => void;
+  setConfirmDelete: (v: boolean) => void;
+  setSpellcheck: (v: boolean) => void;
+  addSearchHistory: (q: string) => void;
 }
 
 function initialTheme(): ThemeId {
@@ -114,6 +134,22 @@ function initialFontSize(): "sm" | "md" | "lg" {
   return v === "sm" || v === "lg" ? v : "md";
 }
 
+function loadBool(key: string, def: boolean): boolean {
+  if (typeof localStorage === "undefined") return def;
+  const v = localStorage.getItem(key);
+  return v === null ? def : v === "true";
+}
+
+function loadNum(key: string, def: number): number {
+  if (typeof localStorage === "undefined") return def;
+  const v = Number(localStorage.getItem(key));
+  return Number.isFinite(v) && v > 0 ? v : def;
+}
+
+function persist(key: string, value: string) {
+  if (typeof localStorage !== "undefined") localStorage.setItem(key, value);
+}
+
 export const useStore = create<AppStore>((set, get) => ({
   tree: [],
   selectedPath: null,
@@ -133,8 +169,15 @@ export const useStore = create<AppStore>((set, get) => ({
   recent: loadList("recent"),
   pinned: loadList("pinned"),
   sortBy: "name",
+  sortDir: (localStorage.getItem("sortDir") as "asc" | "desc") || "asc",
   fontSize: initialFontSize(),
   backlinks: [],
+  autoSave: loadBool("autoSave", true),
+  autoSync: loadBool("autoSync", true),
+  autoSyncSec: loadNum("autoSyncSec", 10),
+  confirmDelete: loadBool("confirmDelete", true),
+  spellcheck: loadBool("spellcheck", false),
+  searchHistory: loadList("searchHistory"),
 
   init: async () => {
     set({ loading: true, error: null });
@@ -236,8 +279,12 @@ export const useStore = create<AppStore>((set, get) => ({
 
   createNote: async (path: string) => {
     const rel = ensureMd(path);
+    const title = rel.replace(/\.md$/, "").split("/").pop();
+    // 15. 새 노트에 프론트매터 템플릿(생성일)
+    const today = formatDateYmd(new Date());
+    const body = `---\ncreated: ${today}\n---\n\n# ${title}\n\n`;
     try {
-      await api.writeNote(rel, `# ${rel.replace(/\.md$/, "").split("/").pop()}\n\n`);
+      await api.writeNote(rel, body);
       await get().loadTree();
       await get().selectNote(rel);
       await get().pushChanges(`create ${rel}`);
@@ -302,6 +349,70 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   setSortBy: (sortBy) => set({ sortBy }),
+
+  setSortDir: (sortDir) => {
+    persist("sortDir", sortDir);
+    set({ sortDir });
+  },
+
+  // 8. 오늘 날짜 노트 열기/생성
+  openDailyNote: async () => {
+    const rel = `daily/${formatDateYmd(new Date())}.md`;
+    const exists = flattenFiles(get().tree).includes(rel);
+    if (!exists) {
+      const today = formatDateYmd(new Date());
+      await api.writeNote(rel, `---\ncreated: ${today}\n---\n\n# ${today}\n\n`);
+      await get().loadTree();
+      await get().pushChanges(`create ${rel}`);
+    }
+    await get().selectNote(rel);
+  },
+
+  // 13/14. 인접 노트로 이동(델타: +1 다음, -1 이전)
+  gotoAdjacentNote: async (delta: number) => {
+    const files = flattenFiles(get().tree);
+    if (files.length === 0) return;
+    const cur = get().selectedPath;
+    const idx = cur ? files.indexOf(cur) : -1;
+    const next = (idx + delta + files.length) % files.length;
+    await get().selectNote(files[next]);
+  },
+
+  // 21. 커밋 메시지를 직접 지정해 저장+동기화
+  saveWithMessage: async (message: string) => {
+    const { selectedPath } = get();
+    if (!selectedPath) return;
+    await get().saveLocal();
+    await get().pushChanges(message || `update ${selectedPath}`);
+  },
+
+  setAutoSave: (v) => {
+    persist("autoSave", String(v));
+    set({ autoSave: v });
+  },
+  setAutoSync: (v) => {
+    persist("autoSync", String(v));
+    set({ autoSync: v });
+  },
+  setAutoSyncSec: (v) => {
+    persist("autoSyncSec", String(v));
+    set({ autoSyncSec: v });
+  },
+  setConfirmDelete: (v) => {
+    persist("confirmDelete", String(v));
+    set({ confirmDelete: v });
+  },
+  setSpellcheck: (v) => {
+    persist("spellcheck", String(v));
+    set({ spellcheck: v });
+  },
+  addSearchHistory: (q) => {
+    const query = q.trim();
+    if (query.length < 2) return;
+    const searchHistory = [query, ...get().searchHistory.filter((p) => p !== query)].slice(0, 8);
+    persist("searchHistory", JSON.stringify(searchHistory));
+    set({ searchHistory });
+  },
 
   togglePin: (path: string) => {
     const pinned = get().pinned.includes(path)

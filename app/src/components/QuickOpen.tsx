@@ -3,18 +3,21 @@ import { useStore } from "../store";
 import { flattenFiles } from "../lib/tree";
 
 export function QuickOpen({ onClose }: { onClose: () => void }) {
-  const { tree, selectNote } = useStore();
+  const { tree, selectNote, recent } = useStore();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
 
   const files = useMemo(() => flattenFiles(tree), [tree]);
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
-      ? files.filter((p) => p.toLowerCase().includes(q))
-      : files;
-    return list.slice(0, 50);
-  }, [files, query]);
+    if (!q) {
+      // 30. 최근 노트를 먼저, 그다음 나머지
+      const recentExisting = recent.filter((p) => files.includes(p));
+      const rest = files.filter((p) => !recentExisting.includes(p));
+      return [...recentExisting, ...rest].slice(0, 50);
+    }
+    return files.filter((p) => p.toLowerCase().includes(q)).slice(0, 50);
+  }, [files, query, recent]);
 
   const choose = (path: string) => {
     selectNote(path);

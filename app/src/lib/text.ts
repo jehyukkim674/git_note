@@ -54,6 +54,23 @@ export function extractTags(content: string): string[] {
   return out;
 }
 
+/// 본문에서 index번째 태스크 항목(- [ ] / - [x])의 체크 상태를 토글한다.
+/// 렌더된 미리보기의 체크박스 순서(문서 순서)와 일치한다.
+export function toggleTaskAt(content: string, index: number): string {
+  let n = -1;
+  return content
+    .split("\n")
+    .map((line) => {
+      const m = line.match(/^(\s*[-*+]\s+\[)([ xX])(\].*)$/);
+      if (!m) return line;
+      n += 1;
+      if (n !== index) return line;
+      const checked = m[2].toLowerCase() === "x";
+      return `${m[1]}${checked ? " " : "x"}${m[3]}`;
+    })
+    .join("\n");
+}
+
 /// git 병합 충돌 마커(<<<<<<< / ======= / >>>>>>>)가 본문에 남아있는지 검사한다.
 export function hasConflictMarkers(content: string): boolean {
   return /^(<{7}|={7}|>{7})/m.test(content);
@@ -66,6 +83,14 @@ export function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-");
+}
+
+/// Date를 YYYY-MM-DD 문자열로 변환한다(로컬 기준).
+export function formatDateYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export interface Heading {
@@ -92,4 +117,16 @@ export function extractHeadings(content: string): Heading[] {
     }
   }
   return headings;
+}
+
+/// 헤딩 목록으로 마크다운 목차(중첩 링크 리스트)를 생성한다.
+export function generateToc(content: string): string {
+  const hs = extractHeadings(content);
+  if (hs.length === 0) return "";
+  const min = Math.min(...hs.map((h) => h.level));
+  return (
+    hs
+      .map((h) => `${"  ".repeat(h.level - min)}- [${h.text}](#${h.slug})`)
+      .join("\n") + "\n"
+  );
 }

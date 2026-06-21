@@ -51,6 +51,7 @@ export function Dialog({
           <input
             className="text-input"
             autoFocus
+            onFocus={(e) => e.target.select()}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {

@@ -19,6 +19,16 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     setFontSize,
     theme,
     setTheme,
+    autoSave,
+    autoSync,
+    autoSyncSec,
+    confirmDelete,
+    spellcheck,
+    setAutoSave,
+    setAutoSync,
+    setAutoSyncSec,
+    setConfirmDelete,
+    setSpellcheck,
     refreshAuth,
     logout,
     connectRepo,
@@ -267,6 +277,56 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <li><kbd>⌘/Ctrl + N</kbd> 새 노트</li>
             <li><kbd>⌘/Ctrl + K</kbd> 빠른 열기</li>
           </ul>
+        </section>
+
+        <section className="settings-section">
+          <h3>편집 · 동기화</h3>
+          <label className="setting-row">
+            <input
+              type="checkbox"
+              checked={autoSave}
+              onChange={(e) => setAutoSave(e.target.checked)}
+            />
+            자동 저장 (편집 1.5초 후 로컬 저장)
+          </label>
+          <label className="setting-row">
+            <input
+              type="checkbox"
+              checked={autoSync}
+              onChange={(e) => setAutoSync(e.target.checked)}
+            />
+            자동 동기화
+          </label>
+          <label className="setting-row">
+            자동 동기화 간격(초)
+            <input
+              className="num-input"
+              type="number"
+              min={3}
+              max={300}
+              value={autoSyncSec}
+              disabled={!autoSync}
+              onChange={(e) =>
+                setAutoSyncSec(Math.max(3, Number(e.target.value) || 10))
+              }
+            />
+          </label>
+          <label className="setting-row">
+            <input
+              type="checkbox"
+              checked={confirmDelete}
+              onChange={(e) => setConfirmDelete(e.target.checked)}
+            />
+            삭제 시 확인 대화상자 표시
+          </label>
+          <label className="setting-row">
+            <input
+              type="checkbox"
+              checked={spellcheck}
+              onChange={(e) => setSpellcheck(e.target.checked)}
+            />
+            편집기 맞춤법 검사
+          </label>
         </section>
 
         <section className="settings-section">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./store";
 import { api } from "./lib/api";
 import { renderMarkdown, stripFrontmatter } from "./lib/markdown";
-import { hasConflictMarkers } from "./lib/text";
+import { hasConflictMarkers, toggleTaskAt, generateToc } from "./lib/text";
 import { useMediaQuery } from "./lib/useMediaQuery";
 import { Sidebar } from "./components/Sidebar";
 import { Editor } from "./components/Editor";
@@ -12,7 +12,11 @@ import { QuickOpen } from "./components/QuickOpen";
 import { Dialog } from "./components/Dialog";
 import { Outline } from "./components/Outline";
 import { Connections } from "./components/Connections";
+import { TagBrowser } from "./components/TagBrowser";
+import { StatsModal } from "./components/StatsModal";
 import "./App.css";
+
+type ViewMode = "split" | "editor" | "preview";
 
 async function saveImage(file: File): Promise<string> {
   const buf = new Uint8Array(await file.arrayBuffer());
@@ -33,6 +37,11 @@ function App() {
     config,
     fontSize,
     backlinks,
+    pinned,
+    spellcheck,
+    autoSave,
+    autoSync,
+    autoSyncSec,
     setSearchQuery,
     init,
     selectNote,
@@ -46,6 +55,10 @@ function App() {
     openByName,
     createNote,
     createFolder,
+    togglePin,
+    openDailyNote,
+    gotoAdjacentNote,
+    saveWithMessage,
   } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
@@ -55,7 +68,64 @@ function App() {
   >(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const [showOutline, setShowOutline] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const [zen, setZen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("split");
+  const [commitOpen, setCommitOpen] = useState(false);
+  const [sidebarW, setSidebarW] = useState(
+    () => Number(localStorage.getItem("sidebarW")) || 250
+  );
   const isMobile = useMediaQuery("(max-width: 720px)");
+
+  useEffect(() => {
+    localStorage.setItem("sidebarW", String(sidebarW));
+  }, [sidebarW]);
+
+  // 17. 사이드바 너비 드래그 조절
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sidebarW;
+    const move = (ev: MouseEvent) =>
+      setSidebarW(Math.min(440, Math.max(180, startW + ev.clientX - startX)));
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const toggleTask = (index: number) =>
+    setContent(toggleTaskAt(content, index));
+
+  const closeMenu = (e: React.MouseEvent) =>
+    (e.currentTarget as HTMLElement).closest("details")?.removeAttribute("open");
+  const copyMarkdown = () => navigator.clipboard.writeText(content);
+  const copyHtml = () =>
+    navigator.clipboard.writeText(renderMarkdown(content, vaultPath));
+  const insertToc = () => {
+    const toc = generateToc(content);
+    if (toc) setContent(`${toc}\n${content}`);
+  };
+  const printNote = () => {
+    const html = renderMarkdown(content, vaultPath);
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(
+      `<html><head><title>${selectedPath ?? "노트"}</title></head><body>${html}</body></html>`
+    );
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+  const cycleView = () =>
+    setViewMode((m) =>
+      m === "split" ? "editor" : m === "editor" ? "preview" : "split"
+    );
+  const viewLabel = { split: "분할", editor: "편집", preview: "미리보기" }[viewMode];
 
   const wordInfo = useMemo(() => {
     const text = stripFrontmatter(content).trim();
@@ -86,8 +156,35 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  // 28. 창 제목에 현재 노트 이름 표시
+  useEffect(() => {
+    const name = selectedPath?.split("/").pop()?.replace(/\.md$/, "");
+    document.title = name ? `${name} — git_note` : "git_note";
+  }, [selectedPath]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // 22. 단축키 도움말(?)
+      if (e.key === "?" && !(e.metaKey || e.ctrlKey)) {
+        const el = e.target as HTMLElement;
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)
+          return;
+        e.preventDefault();
+        setShowHelp((s) => !s);
+        return;
+      }
+      // 25. Esc로 젠 모드 종료
+      if (e.key === "Escape" && zen) {
+        setZen(false);
+        return;
+      }
+      // 27. Esc로 검색 초기화(모달이 없을 때)
+      if (e.key === "Escape" && !settingsOpen && !quickOpen && !appDialog && !showHelp) {
+        if (useStore.getState().searchQuery) {
+          setSearchQuery("");
+          return;
+        }
+      }
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key === "s") {
         e.preventDefault();
@@ -98,25 +195,44 @@ function App() {
       } else if (e.key === "k" || e.key === "p") {
         e.preventDefault();
         setQuickOpen(true);
+      } else if (e.key === "\\") {
+        // 23. ⌘\ 아웃라인 토글
+        e.preventDefault();
+        setShowOutline((s) => !s);
+      } else if (e.key === "]") {
+        // 13. 다음 노트
+        e.preventDefault();
+        gotoAdjacentNote(1);
+      } else if (e.key === "[") {
+        // 14. 이전 노트
+        e.preventDefault();
+        gotoAdjacentNote(-1);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [save]);
+  }, [save, settingsOpen, quickOpen, appDialog, showHelp, zen, setSearchQuery, gotoAdjacentNote]);
 
-  // 자동 저장: 편집 후 1.5초 로컬 저장(push 안 함)
+  // 26. 오류 토스트 자동 닫힘(6초)
   useEffect(() => {
-    if (!dirty || !selectedPath) return;
+    if (!error) return;
+    const t = setTimeout(() => clearError(), 6000);
+    return () => clearTimeout(t);
+  }, [error, clearError]);
+
+  // 자동 저장: 편집 후 1.5초 로컬 저장(push 안 함) — 설정으로 끌 수 있음
+  useEffect(() => {
+    if (!autoSave || !dirty || !selectedPath) return;
     const t = setTimeout(() => saveLocal(), 1500);
     return () => clearTimeout(t);
-  }, [dirty, content, selectedPath, saveLocal]);
+  }, [autoSave, dirty, content, selectedPath, saveLocal]);
 
-  // 자동 동기화: 마지막 편집 후 10초에 한 번 push(커밋 폭주 방지)
+  // 자동 동기화: 마지막 편집 후 N초에 한 번 push(커밋 폭주 방지) — 설정으로 끌 수 있음
   useEffect(() => {
-    if (!selectedPath || !config?.repo_url) return;
-    const t = setTimeout(() => pushChanges("auto sync"), 10000);
+    if (!autoSync || !selectedPath || !config?.repo_url) return;
+    const t = setTimeout(() => pushChanges("auto sync"), autoSyncSec * 1000);
     return () => clearTimeout(t);
-  }, [content, selectedPath, config?.repo_url, pushChanges]);
+  }, [autoSync, autoSyncSec, content, selectedPath, config?.repo_url, pushChanges]);
 
   // 창 포커스 복귀 시 자동 pull(스펙)
   useEffect(() => {
@@ -199,6 +315,55 @@ function App() {
           onCancel={() => setAppDialog(null)}
         />
       )}
+      {showHelp && (
+        <div className="modal-backdrop" onClick={() => setShowHelp(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="단축키"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>단축키</h2>
+            <ul className="shortcut-list">
+              <li><kbd>⌘/Ctrl + S</kbd> 저장 + 동기화</li>
+              <li><kbd>⌘/Ctrl + N</kbd> 새 노트</li>
+              <li><kbd>⌘/Ctrl + K</kbd> 빠른 열기</li>
+              <li><kbd>⌘/Ctrl + \</kbd> 목차 열기/닫기</li>
+              <li><kbd>⌘/Ctrl + F</kbd> 노트 안에서 찾기·바꾸기</li>
+              <li><kbd>⌘/Ctrl + ]</kbd> 다음 노트 · <kbd>⌘/Ctrl + [</kbd> 이전 노트</li>
+              <li><kbd>⌘/Ctrl + B</kbd> 굵게 · <kbd>⌘/Ctrl + I</kbd> 기울임 · <kbd>⌘/Ctrl + K</kbd> 링크</li>
+              <li><kbd>?</kbd> 이 도움말</li>
+              <li><kbd>Esc</kbd> 검색 초기화 / 닫기</li>
+            </ul>
+            <div className="row-end">
+              <button onClick={() => setShowHelp(false)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showStats && (
+        <StatsModal
+          content={content}
+          path={selectedPath}
+          onClose={() => setShowStats(false)}
+        />
+      )}
+      {showTags && <TagBrowser onClose={() => setShowTags(false)} />}
+      {commitOpen && (
+        <Dialog
+          title="메시지와 함께 동기화"
+          mode="input"
+          initial={selectedPath ? `update ${selectedPath}` : ""}
+          message="커밋 메시지를 입력하세요."
+          confirmLabel="동기화"
+          onSubmit={(v) => {
+            saveWithMessage(v.trim());
+            setCommitOpen(false);
+          }}
+          onCancel={() => setCommitOpen(false)}
+        />
+      )}
     </>
   );
 
@@ -218,6 +383,35 @@ function App() {
             </span>
           )}
           {selectedPath && (
+            <button
+              className="save-btn"
+              onClick={() => togglePin(selectedPath)}
+              title={pinned.includes(selectedPath) ? "고정 해제" : "고정"}
+              aria-label="고정 토글"
+            >
+              {pinned.includes(selectedPath) ? "★" : "☆"}
+            </button>
+          )}
+          {selectedPath && !isMobile && (
+            <details className="hmenu">
+              <summary className="save-btn" title="더 보기">⋯</summary>
+              <div className="hmenu-list">
+                <button onClick={(e) => { closeMenu(e); copyMarkdown(); }}>Markdown 복사</button>
+                <button onClick={(e) => { closeMenu(e); copyHtml(); }}>HTML 복사</button>
+                <button onClick={(e) => { closeMenu(e); onExport(); }}>HTML 내보내기</button>
+                <button onClick={(e) => { closeMenu(e); insertToc(); }}>목차 삽입</button>
+                <button onClick={(e) => { closeMenu(e); printNote(); }}>인쇄</button>
+                <button onClick={(e) => { closeMenu(e); setShowStats(true); }}>통계</button>
+                <button onClick={(e) => { closeMenu(e); setCommitOpen(true); }}>메시지와 함께 동기화</button>
+              </div>
+            </details>
+          )}
+          {!isMobile && (
+            <button className="save-btn" onClick={cycleView} title="보기 모드 전환">
+              {viewLabel}
+            </button>
+          )}
+          {isMobile && selectedPath && (
             <button className="save-btn" onClick={onExport} title="HTML 내보내기">
               HTML
             </button>
@@ -251,9 +445,19 @@ function App() {
       )}
       {selectedPath ? (
         isMobile && mobilePreview ? (
-          <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
+          <Preview
+            content={content}
+            vaultPath={vaultPath}
+            onWikiLink={openByName}
+            onToggleTask={toggleTask}
+          />
         ) : (
-          <Editor value={content} onChange={setContent} saveImage={saveImage} />
+          <Editor
+            value={content}
+            onChange={setContent}
+            saveImage={saveImage}
+            spellcheck={spellcheck}
+          />
         )
       ) : (
         <div className="empty">
@@ -273,55 +477,103 @@ function App() {
     </section>
   );
 
+  const previewPane = (
+    <section className="preview-pane">
+      <div className="pane-header">
+        <span className="pane-label">미리보기</span>
+        <span className="header-right">
+          {selectedPath && (
+            <span className="word-count">{wordInfo.words}단어</span>
+          )}
+          <button className="save-btn" onClick={cycleView} title="보기 모드 전환">
+            {viewLabel}
+          </button>
+          <button
+            className="save-btn"
+            onClick={() => setZen(true)}
+            title="젠 모드(집중)"
+          >
+            ⛶
+          </button>
+          <button
+            className="save-btn"
+            onClick={() => setShowOutline((s) => !s)}
+            title="목차 (⌘\)"
+          >
+            {showOutline ? "목차 닫기" : "목차"}
+          </button>
+        </span>
+      </div>
+      {showOutline && <Outline content={content} />}
+      <Preview
+        content={content}
+        vaultPath={vaultPath}
+        onWikiLink={openByName}
+        onToggleTask={toggleTask}
+      />
+      {selectedPath && (
+        <Connections
+          content={content}
+          backlinks={backlinks}
+          onTag={(t) => setSearchQuery(`#${t}`)}
+          onOpen={selectNote}
+        />
+      )}
+    </section>
+  );
+
+  const sidebar = (
+    <Sidebar
+      onOpenSettings={() => setSettingsOpen(true)}
+      onNewNote={() => setAppDialog({ kind: "newNote" })}
+      onNewFolder={() => setAppDialog({ kind: "newFolder" })}
+      onNewInFolder={(dir) => setAppDialog({ kind: "newNote", initial: `${dir}/` })}
+      onDailyNote={() => openDailyNote()}
+      onOpenTags={() => setShowTags(true)}
+    />
+  );
+
   if (isMobile) {
     return (
       <div className={`app app-mobile font-${fontSize}`}>
-        {selectedPath ? (
-          editorPane
-        ) : (
-          <Sidebar
-            onOpenSettings={() => setSettingsOpen(true)}
-            onNewNote={() => setAppDialog({ kind: "newNote" })}
-            onNewFolder={() => setAppDialog({ kind: "newFolder" })}
-            onNewInFolder={(dir) => setAppDialog({ kind: "newNote", initial: `${dir}/` })}
-          />
-        )}
+        {selectedPath ? editorPane : sidebar}
+        {overlays}
+      </div>
+    );
+  }
+
+  // 25. 젠 모드: 에디터만 전체 화면
+  if (zen) {
+    return (
+      <div className={`app app-zen font-${fontSize}`}>
+        {editorPane}
+        <button
+          className="zen-exit"
+          onClick={() => setZen(false)}
+          title="젠 모드 종료 (Esc)"
+          aria-label="젠 모드 종료"
+        >
+          ✕
+        </button>
         {overlays}
       </div>
     );
   }
 
   return (
-    <div className={`app font-${fontSize}`}>
-      <Sidebar
-            onOpenSettings={() => setSettingsOpen(true)}
-            onNewNote={() => setAppDialog({ kind: "newNote" })}
-            onNewFolder={() => setAppDialog({ kind: "newFolder" })}
-            onNewInFolder={(dir) => setAppDialog({ kind: "newNote", initial: `${dir}/` })}
-          />
-      {editorPane}
-      <section className="preview-pane">
-        <div className="pane-header">
-          <span className="pane-label">미리보기</span>
-          <button
-            className="save-btn"
-            onClick={() => setShowOutline((s) => !s)}
-            title="목차"
-          >
-            {showOutline ? "목차 닫기" : "목차"}
-          </button>
-        </div>
-        {showOutline && <Outline content={content} />}
-        <Preview content={content} vaultPath={vaultPath} onWikiLink={openByName} />
-        {selectedPath && (
-          <Connections
-            content={content}
-            backlinks={backlinks}
-            onTag={(t) => setSearchQuery(`#${t}`)}
-            onOpen={selectNote}
-          />
-        )}
-      </section>
+    <div
+      className={`app view-${viewMode} font-${fontSize}`}
+      style={{ ["--sidebar-w" as string]: `${sidebarW}px` } as React.CSSProperties}
+    >
+      {sidebar}
+      <div
+        className="sidebar-resizer"
+        onMouseDown={startResize}
+        role="separator"
+        aria-label="사이드바 너비 조절"
+      />
+      {viewMode !== "preview" && editorPane}
+      {viewMode !== "editor" && previewPane}
 
       {overlays}
     </div>

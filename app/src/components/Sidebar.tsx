@@ -4,6 +4,7 @@ import { TreeView } from "./TreeView";
 import { Dialog } from "./Dialog";
 import { splitHighlight } from "../lib/text";
 import { themeMeta, nextTheme } from "../lib/themes";
+import { flattenFiles } from "../lib/tree";
 import type { TreeNode } from "../lib/api";
 
 function countNotes(nodes: TreeNode[]): number {
@@ -11,6 +12,24 @@ function countNotes(nodes: TreeNode[]): number {
     (sum, n) => sum + (n.is_dir ? countNotes(n.children) : 1),
     0
   );
+}
+
+function collectDirs(nodes: TreeNode[], out: string[] = []): string[] {
+  for (const n of nodes) {
+    if (n.is_dir) {
+      out.push(n.path);
+      collectDirs(n.children, out);
+    }
+  }
+  return out;
+}
+
+function loadOpenDirs(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem("openDirs") || "{}");
+  } catch {
+    return {};
+  }
 }
 
 const SYNC_LABEL: Record<string, string> = {
@@ -28,14 +47,22 @@ type DialogState =
   | { kind: "delete"; path: string }
   | null;
 
-function sortTree(nodes: TreeNode[], sortBy: "name" | "modified"): TreeNode[] {
+function sortTree(
+  nodes: TreeNode[],
+  sortBy: "name" | "modified",
+  dir: "asc" | "desc"
+): TreeNode[] {
+  const sign = dir === "asc" ? 1 : -1;
   const sorted = [...nodes].sort((a, b) => {
-    if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-    if (!a.is_dir && sortBy === "modified") return b.modified - a.modified;
-    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1; // 폴더 우선은 고정
+    const base =
+      !a.is_dir && sortBy === "modified"
+        ? a.modified - b.modified
+        : a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    return base * sign;
   });
   return sorted.map((n) =>
-    n.is_dir ? { ...n, children: sortTree(n.children, sortBy) } : n
+    n.is_dir ? { ...n, children: sortTree(n.children, sortBy, dir) } : n
   );
 }
 
@@ -44,6 +71,8 @@ interface Props {
   onNewNote: () => void;
   onNewFolder: () => void;
   onNewInFolder: (dir: string) => void;
+  onDailyNote: () => void;
+  onOpenTags: () => void;
 }
 
 export function Sidebar({
@@ -51,6 +80,8 @@ export function Sidebar({
   onNewNote,
   onNewFolder,
   onNewInFolder,
+  onDailyNote,
+  onOpenTags,
 }: Props) {
   const {
     tree,
@@ -71,9 +102,37 @@ export function Sidebar({
     togglePin,
     sortBy,
     setSortBy,
+    sortDir,
+    setSortDir,
+    confirmDelete,
+    searchHistory,
+    addSearchHistory,
   } = useStore();
   const [local, setLocal] = useState("");
   const [dialog, setDialog] = useState<DialogState>(null);
+  const [fileOnly, setFileOnly] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [openDirs, setOpenDirs] = useState<Record<string, boolean>>(loadOpenDirs);
+  const [showPinned, setShowPinned] = useState(true);
+  const [showRecent, setShowRecent] = useState(true);
+
+  const persistDirs = (next: Record<string, boolean>) => {
+    setOpenDirs(next);
+    try {
+      localStorage.setItem("openDirs", JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
+  const toggleDir = (path: string) =>
+    persistDirs({ ...openDirs, [path]: !(openDirs[path] ?? true) });
+  const dirPaths = useMemo(() => collectDirs(tree), [tree]);
+  const allOpen = dirPaths.every((p) => openDirs[p] ?? true);
+  const setAllDirs = (open: boolean) => {
+    const next: Record<string, boolean> = {};
+    dirPaths.forEach((p) => (next[p] = open));
+    persistDirs(next);
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setSearchQuery(local), 200);
@@ -86,8 +145,29 @@ export function Sidebar({
   }, [searchQuery]);
 
   const searching = searchQuery.trim() !== "";
-  const sortedTree = useMemo(() => sortTree(tree, sortBy), [tree, sortBy]);
+  const sortedTree = useMemo(
+    () => sortTree(tree, sortBy, sortDir),
+    [tree, sortBy, sortDir]
+  );
   const noteCount = useMemo(() => countNotes(tree), [tree]);
+  const fileMatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return flattenFiles(tree).filter((p) => p.toLowerCase().includes(q));
+  }, [tree, searchQuery]);
+
+  // 20. 현재 노트의 상위 폴더를 모두 펼친다.
+  const revealActive = () => {
+    if (!selectedPath) return;
+    const parts = selectedPath.split("/");
+    const next = { ...openDirs };
+    let acc = "";
+    for (let i = 0; i < parts.length - 1; i++) {
+      acc = acc ? `${acc}/${parts[i]}` : parts[i];
+      next[acc] = true;
+    }
+    persistDirs(next);
+  };
 
   return (
     <aside className="sidebar">
@@ -115,11 +195,55 @@ export function Sidebar({
           </button>
           <button
             className="icon-btn"
+            title="오늘 노트"
+            aria-label="오늘 노트"
+            onClick={onDailyNote}
+          >
+            📅
+          </button>
+          <button
+            className="icon-btn"
+            title="태그 보기"
+            aria-label="태그 보기"
+            onClick={onOpenTags}
+          >
+            #
+          </button>
+          {selectedPath && (
+            <button
+              className="icon-btn"
+              title="현재 노트 위치 보기"
+              aria-label="현재 노트 위치 보기"
+              onClick={revealActive}
+            >
+              🎯
+            </button>
+          )}
+          {dirPaths.length > 0 && (
+            <button
+              className="icon-btn"
+              title={allOpen ? "폴더 모두 접기" : "폴더 모두 펼치기"}
+              aria-label={allOpen ? "폴더 모두 접기" : "폴더 모두 펼치기"}
+              onClick={() => setAllDirs(!allOpen)}
+            >
+              {allOpen ? "⊟" : "⊞"}
+            </button>
+          )}
+          <button
+            className="icon-btn"
             title={`정렬: ${sortBy === "name" ? "이름" : "수정시각"}`}
             aria-label={`정렬 기준: ${sortBy === "name" ? "이름" : "수정시각"}`}
             onClick={() => setSortBy(sortBy === "name" ? "modified" : "name")}
           >
-            {sortBy === "name" ? "A↓" : "🕘"}
+            {sortBy === "name" ? "A" : "🕘"}
+          </button>
+          <button
+            className="icon-btn"
+            title={`정렬 방향: ${sortDir === "asc" ? "오름차순" : "내림차순"}`}
+            aria-label={`정렬 방향: ${sortDir === "asc" ? "오름차순" : "내림차순"}`}
+            onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
+          >
+            {sortDir === "asc" ? "↑" : "↓"}
           </button>
           <button
             className="icon-btn"
@@ -135,11 +259,25 @@ export function Sidebar({
         <span className="search-icon" aria-hidden="true">🔍</span>
         <input
           className="search-box"
-          placeholder="검색…"
+          placeholder={fileOnly ? "파일명 검색…" : "검색…"}
           value={local}
           onChange={(e) => setLocal(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addSearchHistory(local);
+          }}
           aria-label="노트 검색"
         />
+        <button
+          className={"search-toggle" + (fileOnly ? " active" : "")}
+          title={fileOnly ? "파일명만 검색 (켜짐)" : "파일명만 검색"}
+          aria-label="파일명만 검색"
+          aria-pressed={fileOnly}
+          onClick={() => setFileOnly((v) => !v)}
+        >
+          파일명
+        </button>
         {local && (
           <button
             className="search-clear"
@@ -151,10 +289,46 @@ export function Sidebar({
           </button>
         )}
       </div>
-      {searching ? (
+      {/* 17. 검색 기록 */}
+      {searchFocused && !local && searchHistory.length > 0 && (
+        <ul className="search-history">
+          {searchHistory.map((q) => (
+            <li key={q}>
+              <button
+                className="history-item"
+                onMouseDown={() => setLocal(q)}
+              >
+                🕘 {q}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {searching && fileOnly ? (
         <ul className="search-results">
-          {searchResults.length === 0 && (
+          {fileMatches.length === 0 ? (
             <li className="search-empty">결과 없음</li>
+          ) : (
+            <li className="search-count">파일명 {fileMatches.length}개</li>
+          )}
+          {fileMatches.map((path) => (
+            <li key={path}>
+              <button className="search-hit" onClick={() => selectNote(path)}>
+                <span className="hit-path">
+                  {splitHighlight(path, searchQuery).map((s, j) =>
+                    s.hit ? <mark key={j}>{s.text}</mark> : <span key={j}>{s.text}</span>
+                  )}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : searching ? (
+        <ul className="search-results">
+          {searchResults.length === 0 ? (
+            <li className="search-empty">결과 없음</li>
+          ) : (
+            <li className="search-count">{searchResults.length}개 결과</li>
           )}
           {searchResults.map((hit, i) => (
             <li key={`${hit.path}:${hit.line}:${i}`}>
@@ -182,38 +356,52 @@ export function Sidebar({
         <>
           {pinned.length > 0 && (
             <div className="recent">
-              <div className="recent-title">고정</div>
-              {pinned.map((path) => (
-                <button
-                  key={path}
-                  className={
-                    "tree-row tree-file recent-item" +
-                    (path === selectedPath ? " selected" : "")
-                  }
-                  onClick={() => selectNote(path)}
-                  title={path}
-                >
-                  ★ {path.split("/").pop()?.replace(/\.md$/, "")}
-                </button>
-              ))}
+              <button
+                className="recent-title section-toggle"
+                onClick={() => setShowPinned((s) => !s)}
+              >
+                <span className="tree-caret" style={{ transform: showPinned ? "rotate(90deg)" : "none" }}>▸</span>
+                고정 ({pinned.length})
+              </button>
+              {showPinned &&
+                pinned.map((path) => (
+                  <button
+                    key={path}
+                    className={
+                      "tree-row tree-file recent-item" +
+                      (path === selectedPath ? " selected" : "")
+                    }
+                    onClick={() => selectNote(path)}
+                    title={path}
+                  >
+                    ★ {path.split("/").pop()?.replace(/\.md$/, "")}
+                  </button>
+                ))}
             </div>
           )}
           {recent.length > 0 && (
             <div className="recent">
-              <div className="recent-title">최근</div>
-              {recent.slice(0, 5).map((path) => (
-                <button
-                  key={path}
-                  className={
-                    "tree-row tree-file recent-item" +
-                    (path === selectedPath ? " selected" : "")
-                  }
-                  onClick={() => selectNote(path)}
-                  title={path}
-                >
-                  {path.split("/").pop()?.replace(/\.md$/, "")}
-                </button>
-              ))}
+              <button
+                className="recent-title section-toggle"
+                onClick={() => setShowRecent((s) => !s)}
+              >
+                <span className="tree-caret" style={{ transform: showRecent ? "rotate(90deg)" : "none" }}>▸</span>
+                최근 ({Math.min(recent.length, 5)})
+              </button>
+              {showRecent &&
+                recent.slice(0, 5).map((path) => (
+                  <button
+                    key={path}
+                    className={
+                      "tree-row tree-file recent-item" +
+                      (path === selectedPath ? " selected" : "")
+                    }
+                    onClick={() => selectNote(path)}
+                    title={path}
+                  >
+                    {path.split("/").pop()?.replace(/\.md$/, "")}
+                  </button>
+                ))}
             </div>
           )}
           <TreeView
@@ -222,16 +410,29 @@ export function Sidebar({
             onSelect={selectNote}
             onRename={(path) => setDialog({ kind: "rename", path })}
             onDuplicate={duplicateNote}
-            onDelete={(path) => setDialog({ kind: "delete", path })}
+            onDelete={(path) =>
+              confirmDelete ? setDialog({ kind: "delete", path }) : deleteNote(path)
+            }
             onPin={togglePin}
             onNewInFolder={onNewInFolder}
             pinned={pinned}
+            openDirs={openDirs}
+            onToggleDir={toggleDir}
           />
         </>
       )}
 
       <button className="sidebar-footer" onClick={onOpenSettings}>
-        <span className={loggedIn ? "dot dot-on" : "dot dot-off"} />
+        <span
+          className={
+            "dot " +
+            (syncStatus === "syncing"
+              ? "dot-sync"
+              : loggedIn
+                ? "dot-on"
+                : "dot-off")
+          }
+        />
         <span>{SYNC_LABEL[syncStatus] ?? syncStatus}</span>
         <span className="footer-gear">⚙</span>
       </button>
