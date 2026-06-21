@@ -7,6 +7,9 @@ import {
   hasConflictMarkers,
   extractTags,
   splitHighlight,
+  toggleTaskAt,
+  formatDateYmd,
+  generateToc,
 } from "./text";
 
 describe("stripFrontmatter", () => {
@@ -77,6 +80,11 @@ describe("splitHighlight", () => {
       { text: "a", hit: true },
     ]);
   });
+  it("매칭이 없으면 전체를 non-hit로 반환한다", () => {
+    expect(splitHighlight("abcdef", "zzz")).toEqual([
+      { text: "abcdef", hit: false },
+    ]);
+  });
 });
 
 describe("hasConflictMarkers", () => {
@@ -98,5 +106,46 @@ describe("extractHeadings", () => {
       { level: 2, text: "소제목", slug: "소제목" },
       { level: 3, text: "깊은", slug: "깊은" },
     ]);
+  });
+});
+
+describe("toggleTaskAt", () => {
+  const doc = "# 제목\n\n- [ ] 첫째\n- [x] 둘째\n- 일반 항목\n- [ ] 셋째";
+
+  it("index 0의 미완료를 완료로 바꾼다", () => {
+    expect(toggleTaskAt(doc, 0)).toContain("- [x] 첫째");
+  });
+
+  it("index 1의 완료를 미완료로 바꾼다", () => {
+    expect(toggleTaskAt(doc, 1)).toContain("- [ ] 둘째");
+  });
+
+  it("태스크가 아닌 줄은 인덱스에서 제외된다(셋째=index 2)", () => {
+    const out = toggleTaskAt(doc, 2);
+    expect(out).toContain("- [x] 셋째");
+    expect(out).toContain("- 일반 항목");
+  });
+
+  it("범위를 벗어난 인덱스는 원문을 유지한다", () => {
+    expect(toggleTaskAt(doc, 9)).toBe(doc);
+  });
+});
+
+describe("formatDateYmd", () => {
+  it("YYYY-MM-DD로 0 채움 포맷한다", () => {
+    expect(formatDateYmd(new Date(2026, 0, 5))).toBe("2026-01-05");
+    expect(formatDateYmd(new Date(2026, 11, 31))).toBe("2026-12-31");
+  });
+});
+
+describe("generateToc", () => {
+  it("헤딩을 중첩 링크 목록으로 만든다", () => {
+    const md = "# 제목\n## 소제목\n### 깊은";
+    expect(generateToc(md)).toBe(
+      "- [제목](#제목)\n  - [소제목](#소제목)\n    - [깊은](#깊은)\n"
+    );
+  });
+  it("헤딩이 없으면 빈 문자열", () => {
+    expect(generateToc("본문만 있음")).toBe("");
   });
 });

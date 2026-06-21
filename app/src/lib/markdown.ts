@@ -25,6 +25,7 @@ const md = new MarkdownIt({
 // 상대경로 이미지(assets/…)를 webview asset URL로 변환.
 const defaultImageRender =
   md.renderer.rules.image ??
+  /* v8 ignore next -- markdown-it는 기본 image 렌더를 항상 제공(도달 불가) */
   ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
 md.renderer.rules.image = (tokens, idx, options, env, self) => {
   const token = tokens[idx];
@@ -42,6 +43,7 @@ md.renderer.rules.image = (tokens, idx, options, env, self) => {
 // 위키링크(wikilink:…)는 data-wikilink 속성을 가진 앵커로 렌더.
 const defaultLinkRender =
   md.renderer.rules.link_open ??
+  /* v8 ignore next -- 기본 link_open 렌더가 항상 존재(도달 불가) */
   ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
 md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   const token = tokens[idx];
@@ -60,6 +62,7 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 // 헤딩에 슬러그 id를 부여(아웃라인 스크롤용).
 const defaultHeadingRender =
   md.renderer.rules.heading_open ??
+  /* v8 ignore next -- 기본 heading_open 렌더가 항상 존재(도달 불가) */
   ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
 md.renderer.rules.heading_open = (tokens, idx, options, env, self) => {
   const inline = tokens[idx + 1];
