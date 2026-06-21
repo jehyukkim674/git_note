@@ -246,6 +246,14 @@ pub fn connect_repo(
     branch: String,
 ) -> Result<AppConfig, String> {
     let token = auth::get_token();
+    // HTTPS 원격은 인증 토큰이 필요하다. 로그인 전이면 명확히 안내한다.
+    let needs_auth = repo_url.starts_with("http://") || repo_url.starts_with("https://");
+    if needs_auth && token.is_none() {
+        return Err(
+            "GitHub 로그인이 필요합니다. 설정 → GitHub에서 먼저 연결(로그인)한 뒤 저장소를 연결하세요."
+                .to_string(),
+        );
+    }
     let (root_path, author_name, author_email) = {
         let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let root = cfg
