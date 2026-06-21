@@ -11,7 +11,48 @@ import { Prec } from "@codemirror/state";
 import { indentWithTab } from "@codemirror/commands";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { search, searchKeymap } from "@codemirror/search";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags as t } from "@lezer/highlight";
 import { formatDateYmd } from "../lib/text";
+
+// 앱 테마 토큰을 그대로 쓰는 에디터 테마(모든 테마의 배경/글자색에 맞춤).
+const cmTheme = EditorView.theme({
+  "&": { backgroundColor: "var(--bg)", color: "var(--text)", height: "100%" },
+  ".cm-content": { caretColor: "var(--accent)", padding: "10px 0" },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--accent)" },
+  "&.cm-focused": { outline: "none" },
+  ".cm-selectionBackground, .cm-content ::selection": {
+    backgroundColor: "var(--accent-soft) !important",
+  },
+  "&.cm-focused .cm-selectionBackground": {
+    backgroundColor: "var(--accent-soft) !important",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "color-mix(in srgb, var(--accent-soft) 35%, transparent)",
+  },
+  ".cm-gutters": {
+    backgroundColor: "var(--bg)",
+    color: "var(--text-dim)",
+    border: "none",
+  },
+  ".cm-activeLineGutter": { backgroundColor: "var(--accent-soft)" },
+  ".cm-placeholder": { color: "var(--text-dim)" },
+  ".cm-scroller": { lineHeight: "1.6" },
+});
+
+// 마크다운 토큰 색상(테마 토큰 사용 → 라이트/다크 모두 가독).
+const cmHighlight = HighlightStyle.define([
+  { tag: t.heading, color: "var(--accent)", fontWeight: "700" },
+  { tag: t.strong, fontWeight: "700", color: "var(--text)" },
+  { tag: t.emphasis, fontStyle: "italic" },
+  { tag: t.strikethrough, textDecoration: "line-through" },
+  { tag: [t.link, t.url], color: "var(--accent)", textDecoration: "underline" },
+  { tag: t.monospace, color: "var(--success)" },
+  { tag: t.quote, color: "var(--text-dim)" },
+  { tag: [t.list, t.processingInstruction], color: "var(--accent)" },
+  { tag: t.contentSeparator, color: "var(--text-dim)" },
+  { tag: t.comment, color: "var(--text-dim)", fontStyle: "italic" },
+]);
 
 interface Props {
   value: string;
@@ -92,6 +133,7 @@ export function Editor({ value, onChange, saveImage, spellcheck }: Props) {
     const exts = [
       markdown(),
       EditorView.lineWrapping,
+      syntaxHighlighting(cmHighlight),
       highlightActiveLine(),
       placeholder("내용을 입력하세요…  (마크다운 지원 · ⌘F 찾기)"),
       closeBrackets(),
@@ -209,9 +251,10 @@ export function Editor({ value, onChange, saveImage, spellcheck }: Props) {
         ref={ref}
         value={value}
         height="100%"
+        theme={cmTheme}
         extensions={extensions}
         onChange={onChange}
-        basicSetup={{ lineNumbers: false, foldGutter: false }}
+        basicSetup={{ lineNumbers: false, foldGutter: false, syntaxHighlighting: false }}
       />
       <div className="editor-status">
         <span>{lines}줄 · {chars}자</span>

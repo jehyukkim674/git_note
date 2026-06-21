@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./store";
+import { themeMeta } from "./lib/themes";
 import { api } from "./lib/api";
 import { renderMarkdown, stripFrontmatter } from "./lib/markdown";
 import { hasConflictMarkers, toggleTaskAt, generateToc } from "./lib/text";
@@ -151,9 +152,16 @@ function App() {
     init();
   }, [init]);
 
-  // 테마 적용
+  // 테마 적용 + 네이티브 창(타이틀 바)도 테마에 맞춤
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    const dark = themeMeta(theme).dark;
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    void import("@tauri-apps/api/window")
+      .then(({ getCurrentWindow }) =>
+        getCurrentWindow().setTheme(dark ? "dark" : "light")
+      )
+      .catch(() => {});
   }, [theme]);
 
   // 28. 창 제목에 현재 노트 이름 표시
