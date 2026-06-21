@@ -50,9 +50,64 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [updateInfo, setUpdateInfo] = useState<UpdateCheck | null>(null);
   const [stats, setStats] = useState<{ notes: number; folders: number } | null>(null);
 
+  // 구글 드라이브
+  const [gId, setGId] = useState(config?.google_client_id ?? "");
+  const [gSecret, setGSecret] = useState("");
+  const [gConnected, setGConnected] = useState(false);
+  const [gMsg, setGMsg] = useState("");
+  const [gBusy, setGBusy] = useState(false);
+
   useEffect(() => {
     api.vaultStats().then(setStats).catch(() => setStats(null));
+    api.gdriveConnected().then(setGConnected).catch(() => setGConnected(false));
   }, []);
+
+  const saveGoogleClient = async () => {
+    if (!gId.trim() || !gSecret.trim()) {
+      setGMsg("클라이언트 ID와 시크릿을 모두 입력하세요.");
+      return;
+    }
+    try {
+      await api.setGoogleClient(gId.trim(), gSecret.trim());
+      setGMsg("구글 클라이언트 저장됨. 이제 '구글 드라이브 연결'을 누르세요.");
+    } catch (e) {
+      setGMsg(String(e));
+    }
+  };
+
+  const connectGdrive = async () => {
+    setGBusy(true);
+    setGMsg("브라우저에서 로그인하세요…");
+    try {
+      await api.gdriveConnect();
+      setGConnected(true);
+      setGMsg("구글 드라이브 연결됨. '지금 동기화'로 노트를 올릴 수 있습니다.");
+    } catch (e) {
+      setGMsg(String(e));
+    } finally {
+      setGBusy(false);
+    }
+  };
+
+  const syncGdrive = async () => {
+    setGBusy(true);
+    setGMsg("동기화 중…");
+    try {
+      const r = await api.gdriveSync();
+      setGMsg(`동기화 완료: 받음 ${r.pulled} · 보냄 ${r.pushed}`);
+      await useStore.getState().loadTree();
+    } catch (e) {
+      setGMsg(String(e));
+    } finally {
+      setGBusy(false);
+    }
+  };
+
+  const logoutGdrive = async () => {
+    await api.gdriveLogout();
+    setGConnected(false);
+    setGMsg("연결 해제됨.");
+  };
 
   const checkUpdate = async () => {
     setUpdateMsg("확인 중…");
@@ -250,11 +305,51 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         </section>
 
         <section className="settings-section">
-          <h3>동기화</h3>
+          <h3>동기화 (Git)</h3>
           <div className="row-between">
             <span className="dim">상태: {syncStatus}</span>
             <button onClick={() => syncNow()}>지금 동기화</button>
           </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>구글 드라이브 (Git 없이 동기화)</h3>
+          {gConnected ? (
+            <>
+              <div className="row-between">
+                <span className="dim">연결됨</span>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={syncGdrive} disabled={gBusy}>지금 동기화</button>
+                  <button className="modal-close" onClick={logoutGdrive}>연결 해제</button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="dim">
+                구글 클라우드에서 만든 데스크톱 OAuth 클라이언트 ID/시크릿을 입력하세요.
+                (Drive API 사용 설정 + 동의화면에 본인을 테스트 사용자로 추가)
+              </p>
+              <input
+                className="text-input"
+                value={gId}
+                onChange={(e) => setGId(e.target.value)}
+                placeholder="구글 client_id"
+              />
+              <input
+                className="text-input"
+                type="password"
+                value={gSecret}
+                onChange={(e) => setGSecret(e.target.value)}
+                placeholder="구글 client_secret"
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="modal-close" onClick={saveGoogleClient}>클라이언트 저장</button>
+                <button onClick={connectGdrive} disabled={gBusy}>구글 드라이브 연결</button>
+              </div>
+            </>
+          )}
+          {gMsg && <p className="modal-msg">{gMsg}</p>}
         </section>
 
         <section className="settings-section">

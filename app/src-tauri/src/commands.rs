@@ -297,6 +297,73 @@ pub fn connect_repo(
     Ok(cfg.clone())
 }
 
+/// 구글 OAuth 데스크톱 클라이언트(ID/시크릿)를 저장한다.
+#[tauri::command]
+pub fn set_google_client(
+    state: State<AppState>,
+    client_id: String,
+    client_secret: String,
+) -> Result<(), String> {
+    let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    cfg.google_client_id = Some(client_id);
+    cfg.google_client_secret = Some(client_secret);
+    cfg.save(&state.config_path).map_err(|e| e.to_string())
+}
+
+/// 구글 드라이브 연결(루프백 OAuth). 브라우저가 열린다.
+#[tauri::command(async)]
+pub async fn gdrive_connect(state: State<'_, AppState>) -> Result<(), String> {
+    let (id, secret) = {
+        let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        (cfg.google_client_id.clone(), cfg.google_client_secret.clone())
+    };
+    let id = id.filter(|s| !s.is_empty()).ok_or_else(|| {
+        "구글 클라이언트 ID가 없습니다. 설정에서 먼저 입력하세요.".to_string()
+    })?;
+    let secret = secret.filter(|s| !s.is_empty()).ok_or_else(|| {
+        "구글 클라이언트 시크릿이 없습니다. 설정에서 먼저 입력하세요.".to_string()
+    })?;
+    crate::gdrive::connect(&id, &secret).await
+}
+
+/// 구글 드라이브와 보관함을 동기화한다.
+#[tauri::command(async)]
+pub async fn gdrive_sync(state: State<'_, AppState>) -> Result<crate::gdrive::DriveSyncResult, String> {
+    let (id, secret, folder, root) = {
+        let cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        (
+            cfg.google_client_id.clone().unwrap_or_default(),
+            cfg.google_client_secret.clone().unwrap_or_default(),
+            cfg.drive_folder_id.clone(),
+            cfg.vault_path
+                .clone()
+                .unwrap_or_else(|| state.default_vault.to_string_lossy().to_string()),
+        )
+    };
+    if id.is_empty() || secret.is_empty() {
+        return Err("구글 클라이언트 설정이 없습니다.".to_string());
+    }
+    let (result, folder_id) =
+        crate::gdrive::sync(&PathBuf::from(root), &id, &secret, folder.as_deref()).await?;
+    // 사용한 폴더 ID 저장.
+    let mut cfg = state.config.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    cfg.drive_folder_id = Some(folder_id);
+    let _ = cfg.save(&state.config_path);
+    Ok(result)
+}
+
+/// 구글 드라이브 연결 여부.
+#[tauri::command]
+pub fn gdrive_connected() -> bool {
+    crate::gdrive::is_connected()
+}
+
+/// 구글 드라이브 연결 해제.
+#[tauri::command]
+pub fn gdrive_logout() {
+    crate::gdrive::logout();
+}
+
 /// 원격에서 pull. 블로킹 → 별도 스레드.
 #[tauri::command(async)]
 pub fn sync_pull(state: State<AppState>) -> Result<sync::SyncResult, String> {

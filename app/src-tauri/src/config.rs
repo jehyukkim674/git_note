@@ -16,6 +16,15 @@ pub struct AppConfig {
     pub author_email: String,
     /// GitHub OAuth App client_id(공개값). device flow에 사용.
     pub github_client_id: Option<String>,
+    /// Google OAuth 데스크톱 클라이언트 ID(루프백 플로우).
+    #[serde(default)]
+    pub google_client_id: Option<String>,
+    /// Google OAuth 데스크톱 클라이언트 시크릿.
+    #[serde(default)]
+    pub google_client_secret: Option<String>,
+    /// 동기화한 Drive 폴더 ID(연결 후 저장).
+    #[serde(default)]
+    pub drive_folder_id: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -27,6 +36,9 @@ impl Default for AppConfig {
             author_name: "git_note".to_string(),
             author_email: "git_note@example.com".to_string(),
             github_client_id: None,
+            google_client_id: None,
+            google_client_secret: None,
+            drive_folder_id: None,
         }
     }
 }

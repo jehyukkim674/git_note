@@ -4,6 +4,7 @@ mod auth;
 mod sync;
 mod update;
 mod config;
+mod gdrive;
 mod commands;
 
 use std::sync::Mutex;
@@ -61,7 +62,12 @@ pub fn run() {
             commands::sync_push,
             commands::check_update_github,
             commands::clone_repo,
-            commands::changed_paths
+            commands::changed_paths,
+            commands::set_google_client,
+            commands::gdrive_connect,
+            commands::gdrive_sync,
+            commands::gdrive_connected,
+            commands::gdrive_logout
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

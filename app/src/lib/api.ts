@@ -15,6 +15,9 @@ export interface AppConfig {
   author_name: string;
   author_email: string;
   github_client_id: string | null;
+  google_client_id?: string | null;
+  google_client_secret?: string | null;
+  drive_folder_id?: string | null;
 }
 
 export interface SearchHit {
@@ -99,4 +102,13 @@ export const api = {
   syncPush: (message: string) => invoke<SyncResult>("sync_push", { message }),
   checkUpdateGithub: (ownerRepo: string) =>
     invoke<UpdateCheck>("check_update_github", { ownerRepo }),
+
+  // 구글 드라이브 동기화
+  setGoogleClient: (clientId: string, clientSecret: string) =>
+    invoke<void>("set_google_client", { clientId, clientSecret }),
+  gdriveConnect: () => invoke<void>("gdrive_connect"),
+  gdriveSync: () =>
+    invoke<{ pulled: number; pushed: number }>("gdrive_sync"),
+  gdriveConnected: () => invoke<boolean>("gdrive_connected"),
+  gdriveLogout: () => invoke<void>("gdrive_logout"),
 };
